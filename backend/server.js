@@ -26,7 +26,10 @@ const allowedOrigins = [
   'http://localhost:5175', // Frontend en desarrollo (puerto alternativo 2)
   'http://localhost:3000', // Frontend alternativo
   process.env.FRONTEND_URL, // URL configurada en variables de entorno
-  'https://sf-alumnos-frontend.onrender.com', // Frontend en producción (Render)
+  'https://federicosanchez.com.ar', // Frontend en producción (Hostinger)
+  'http://federicosanchez.com.ar', // Frontend en producción (Hostinger - HTTP)
+  'https://www.federicosanchez.com.ar', // Frontend con www
+  'http://www.federicosanchez.com.ar', // Frontend con www (HTTP)
 ].filter(Boolean); // Remover valores undefined/null
 
 app.use(cors({
