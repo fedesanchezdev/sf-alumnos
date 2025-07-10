@@ -1,10 +1,11 @@
 services:
+  # Backend API
   - type: web
     name: sf-alumnos-backend
     env: node
     plan: free
-    buildCommand: npm ci
-    startCommand: npm start
+    buildCommand: cd backend && npm ci
+    startCommand: cd backend && npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -13,6 +14,17 @@ services:
         generateValue: true
       - key: FRONTEND_URL
         value: https://sf-alumnos-frontend.onrender.com
+        
+  # Frontend React App
+  - type: web
+    name: sf-alumnos-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://sf-alumnos-backend.onrender.com/api
         
 databases:
   - name: sf-alumnos-mongodb

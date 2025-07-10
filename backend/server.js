@@ -26,7 +26,7 @@ const allowedOrigins = [
   'http://localhost:5175', // Frontend en desarrollo (puerto alternativo 2)
   'http://localhost:3000', // Frontend alternativo
   process.env.FRONTEND_URL, // URL configurada en variables de entorno
-  'https://tu-dominio-frontend.com' // Frontend en producción
+  'https://sf-alumnos-frontend.onrender.com', // Frontend en producción (Render)
 ].filter(Boolean); // Remover valores undefined/null
 
 app.use(cors({
