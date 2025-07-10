@@ -2,6 +2,28 @@
 
 Sistema completo de gestión de alumnos con autenticación, manejo de usuarios, pagos y clases.
 
+## 🌐 En Producción
+- **Frontend**: https://federicosanchez.com.ar/alumnos
+- **Backend**: https://sf-alumnos-backend-new.onrender.com
+
+## 🔄 Flujo de Trabajo
+
+### Ramas
+- **`main`**: Código estable en producción
+- **`dev`**: Rama de desarrollo para nuevas funcionalidades
+
+### Cambio Rápido de Ramas
+```bash
+# Cambiar a desarrollo
+.\switch-branch.ps1 dev
+
+# Cambiar a producción
+.\switch-branch.ps1 main
+```
+
+### Documentación Completa
+Ver `WORKFLOW.md` para el flujo completo de desarrollo y deploy.
+
 ## Estructura del Proyecto
 
 ```
