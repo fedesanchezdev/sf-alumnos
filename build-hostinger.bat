@@ -1,5 +1,5 @@
 @echo off
-echo 🏠 Preparando build para Hostinger (federicosanchez.com.ar)...
+echo 🏠 Preparando build para Hostinger (federicosanchez.com.ar/alumnos)...
 
 rem Crear directorio de build si no existe
 if not exist "build-hostinger" mkdir build-hostinger
@@ -32,14 +32,23 @@ echo.
 echo 1. Ve a tu panel de Hostinger (hpanel.hostinger.com)
 echo 2. Busca "Administrador de archivos" o "File Manager"  
 echo 3. Navega a la carpeta public_html de federicosanchez.com.ar
-echo 4. Haz backup de tu contenido actual (si lo hay)
-echo 5. Sube TODOS los archivos de build-hostinger\ a public_html\
+echo 4. CREA una nueva carpeta llamada "alumnos" dentro de public_html
+echo 5. Sube TODOS los archivos de build-hostinger\ a public_html\alumnos\
 echo 6. Asegúrate de que el archivo .htaccess esté incluido
 echo.
-echo 🌐 URLs:
-echo Frontend: https://federicosanchez.com.ar
-echo Backend:  https://sf-alumnos-backend.onrender.com/api
+echo �️ Estructura final:
+echo public_html/
+echo ├── index.html                    ← Tu página principal (mantener)
+echo ├── alumnos/                      ← Nueva carpeta
+echo │   ├── index.html                ← App React
+echo │   ├── .htaccess                 ← Configuración
+echo │   └── assets/                   ← JS y CSS
 echo.
-echo ⚠️  IMPORTANTE: Asegúrate de subir el archivo .htaccess para el routing de React
+echo �🌐 URLs:
+echo Página principal: https://federicosanchez.com.ar
+echo App de alumnos:   https://federicosanchez.com.ar/alumnos
+echo Backend:          https://sf-alumnos-backend.onrender.com/api
+echo.
+echo ⚠️  IMPORTANTE: La app estará en /alumnos, no reemplazará tu página principal
 
 pause
