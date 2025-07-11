@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { partiturasService, resumenClaseService } from '../services/api';
 import { formatearFechaCorta } from '../utils/fechas';
+import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
 
 const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExistente }) => {
   const [loading, setLoading] = useState(true);
@@ -209,35 +210,15 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
 
       await resumenClaseService.crearOActualizar(datosParaEnviar);
       
-      // Generar mensaje para WhatsApp
-      let mensaje = `*Resumen de Clase*\n`;
-      mensaje += `Fecha: ${formatearFechaCorta(fecha)}\n\n`;
+      // Generar y enviar mensaje de WhatsApp usando utilidades
+      const mensaje = generarMensajeResumen({
+        fecha: formatearFechaCorta(fecha),
+        obrasEstudiadas: formData.obrasEstudiadas,
+        objetivosProximaClase: formData.objetivosProximaClase
+      });
       
-      if (formData.obrasEstudiadas.length > 0) {
-        mensaje += `*Obras Estudiadas:*\n`;
-        formData.obrasEstudiadas.forEach((obra, index) => {
-          mensaje += `${index + 1}. *${obra.compositor}* - ${obra.obra}\n`;
-          if (obra.movimientosCompases) {
-            mensaje += `   Movimientos/Compases: ${obra.movimientosCompases}\n`;
-          }
-          if (obra.comentarios) {
-            mensaje += `   ${obra.comentarios}\n`;
-          }
-          mensaje += `\n`;
-        });
-      }
-      
-      if (formData.objetivosProximaClase) {
-        mensaje += `*Proxima Clase:*\n${formData.objetivosProximaClase}\n`;
-      }
-      
-      // Logs para debugging
-      console.log('Mensaje original:', mensaje);
-      console.log('Mensaje codificado:', encodeURIComponent(mensaje));
-      
-      // Abrir WhatsApp
-      const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-      window.open(urlWhatsApp, '_blank');
+      console.log('Mensaje generado:', mensaje);
+      enviarWhatsApp(mensaje);
       
       console.log('💾 Resumen guardado exitosamente (WhatsApp), llamando onSave...');
       if (onSave) {

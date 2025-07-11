@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { formatearFechaCorta } from '../utils/fechas';
 import { resumenClaseService } from '../services/api';
+import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
 
 const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
   const [enviando, setEnviando] = useState(false);
@@ -19,31 +20,14 @@ const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
     try {
       setEnviando(true);
       
-      // Generar mensaje para WhatsApp
-      let mensaje = `📚 *Resumen de Clase*\n`;
-      mensaje += `📅 Fecha: ${resumen.clase?.fecha ? formatearFechaCorta(resumen.clase.fecha) : 'Fecha no disponible'}\n\n`;
+      // Generar y enviar mensaje usando utilidades
+      const mensaje = generarMensajeResumen({
+        fecha: resumen.clase?.fecha ? formatearFechaCorta(resumen.clase.fecha) : 'Fecha no disponible',
+        obrasEstudiadas: resumen.obrasEstudiadas || [],
+        objetivosProximaClase: resumen.objetivosProximaClase || ''
+      });
       
-      if (resumen.obrasEstudiadas && resumen.obrasEstudiadas.length > 0) {
-        mensaje += `🎼 *Obras Estudiadas:*\n`;
-        resumen.obrasEstudiadas.forEach((obra, index) => {
-          mensaje += `${index + 1}. *${obra.compositor}* - ${obra.obra}\n`;
-          if (obra.movimientosCompases) {
-            mensaje += `   📍 Movimientos/Compases: ${obra.movimientosCompases}\n`;
-          }
-          if (obra.comentarios) {
-            mensaje += `   💬 ${obra.comentarios}\n`;
-          }
-          mensaje += `\n`;
-        });
-      }
-      
-      if (resumen.objetivosProximaClase) {
-        mensaje += `🎯 *Próxima Clase:*\n${resumen.objetivosProximaClase}\n`;
-      }
-      
-      // Abrir WhatsApp
-      const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-      window.open(urlWhatsApp, '_blank');
+      enviarWhatsApp(mensaje);
       
     } catch (error) {
       console.error('Error al enviar por WhatsApp:', error);

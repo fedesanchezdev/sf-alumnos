@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { resumenClaseService, clasesService } from '../services/api';
 import { formatearFecha, formatearFechaCorta } from '../utils/fechas';
+import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
 
 const LoadingSpinner = ({ title, subtitle, size = "normal" }) => {
   const spinnerSize = size === "small" ? "h-6 w-6" : "h-8 w-8";
@@ -32,31 +33,14 @@ const ResumenCard = ({ resumen }) => {
     try {
       setEnviando(true);
       
-      // Generar mensaje para WhatsApp (mismo formato que admin)
-      let mensaje = `📚 *Resumen de Clase*\n`;
-      mensaje += `📅 Fecha: ${resumen.clase?.fecha ? formatearFechaCorta(resumen.clase.fecha) : 'Fecha no disponible'}\n\n`;
+      // Generar y enviar mensaje usando utilidades
+      const mensaje = generarMensajeResumen({
+        fecha: resumen.clase?.fecha ? formatearFechaCorta(resumen.clase.fecha) : 'Fecha no disponible',
+        obrasEstudiadas: resumen.obrasEstudiadas || [],
+        objetivosProximaClase: resumen.objetivosProximaClase || ''
+      });
       
-      if (resumen.obrasEstudiadas && resumen.obrasEstudiadas.length > 0) {
-        mensaje += `🎼 *Obras Estudiadas:*\n`;
-        resumen.obrasEstudiadas.forEach((obra, index) => {
-          mensaje += `${index + 1}. *${obra.compositor}* - ${obra.obra}\n`;
-          if (obra.movimientosCompases) {
-            mensaje += `   📍 Movimientos/Compases: ${obra.movimientosCompases}\n`;
-          }
-          if (obra.comentarios) {
-            mensaje += `   💬 ${obra.comentarios}\n`;
-          }
-          mensaje += `\n`;
-        });
-      }
-      
-      if (resumen.objetivosProximaClase) {
-        mensaje += `🎯 *Próxima Clase:*\n${resumen.objetivosProximaClase}\n`;
-      }
-      
-      // Abrir WhatsApp
-      const urlWhatsApp = `https://wa.me/?text=${encodeURIComponent(mensaje)}`;
-      window.open(urlWhatsApp, '_blank');
+      enviarWhatsApp(mensaje);
       
     } catch (error) {
       console.error('Error al enviar por WhatsApp:', error);
