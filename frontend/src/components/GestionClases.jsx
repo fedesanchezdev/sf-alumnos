@@ -96,6 +96,9 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
   const handleActualizarNotas = async () => {
     setIsUpdating(true);
     try {
+      console.log('Actualizando notas para clase:', clase._id);
+      console.log('Notas nuevas:', notasTemp);
+      
       const data = {
         estado: clase.estado, // Mantener el estado actual
         notas: notasTemp
@@ -106,13 +109,18 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
         data.fechaReprogramada = clase.fechaReprogramada;
       }
 
-      await clasesService.actualizarEstado(clase._id, data);
+      console.log('Datos a enviar:', data);
+      const response = await clasesService.actualizarEstado(clase._id, data);
+      console.log('Respuesta del servidor:', response);
+      
       setNotas(notasTemp); // Actualizar el estado local
       onEstadoChange(clase._id); // Refrescar la vista
       setShowEditNotas(false);
+      
+      console.log('Notas actualizadas exitosamente');
     } catch (error) {
       console.error('Error al actualizar notas:', error);
-      alert('Error al actualizar las notas');
+      alert('Error al actualizar las notas: ' + (error.message || 'Error desconocido'));
     } finally {
       setIsUpdating(false);
     }
@@ -124,12 +132,16 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
   };
 
   const handleEliminarNotas = async () => {
-    if (!confirm('¿Estás seguro de que quieres eliminar las notas de esta clase?')) {
+    // Usar window.confirm para asegurar compatibilidad
+    const confirmDelete = window.confirm('¿Estás seguro de que quieres eliminar las notas de esta clase?');
+    if (!confirmDelete) {
       return;
     }
     
     setIsUpdating(true);
     try {
+      console.log('Eliminando notas para clase:', clase._id);
+      
       const data = {
         estado: clase.estado, // Mantener el estado actual
         notas: '' // Eliminar las notas
@@ -140,14 +152,22 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
         data.fechaReprogramada = clase.fechaReprogramada;
       }
 
-      await clasesService.actualizarEstado(clase._id, data);
+      console.log('Datos a enviar:', data);
+      const response = await clasesService.actualizarEstado(clase._id, data);
+      console.log('Respuesta del servidor:', response);
+      
+      // Actualizar estados locales
       setNotas(''); // Actualizar el estado local
       setNotasTemp(''); // Limpiar el estado temporal
-      onEstadoChange(clase._id); // Refrescar la vista
-      setShowEditNotas(false);
+      setShowEditNotas(false); // Cerrar modal
+      
+      // Refrescar la vista
+      onEstadoChange(clase._id);
+      
+      console.log('Notas eliminadas exitosamente');
     } catch (error) {
       console.error('Error al eliminar notas:', error);
-      alert('Error al eliminar las notas');
+      alert('Error al eliminar las notas: ' + (error.message || 'Error desconocido'));
     } finally {
       setIsUpdating(false);
     }
@@ -340,7 +360,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
                 Cancelar
               </button>
               
-              {notas && (
+              {(notas || clase.notas) && (
                 <button
                   onClick={handleEliminarNotas}
                   disabled={isUpdating}
