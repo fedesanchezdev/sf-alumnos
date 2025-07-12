@@ -114,6 +114,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
       console.log('Respuesta del servidor:', response);
       
       setNotas(notasTemp); // Actualizar el estado local
+      clase.notas = notasTemp; // Forzar actualización del objeto clase
       onEstadoChange(clase._id); // Refrescar la vista
       setShowEditNotas(false);
       
@@ -156,10 +157,13 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
       const response = await clasesService.actualizarEstado(clase._id, data);
       console.log('Respuesta del servidor:', response);
       
-      // Actualizar estados locales
+      // Actualizar estados locales inmediatamente
       setNotas(''); // Actualizar el estado local
       setNotasTemp(''); // Limpiar el estado temporal
       setShowEditNotas(false); // Cerrar modal
+      
+      // Forzar actualización del objeto clase localmente
+      clase.notas = '';
       
       // Refrescar la vista
       onEstadoChange(clase._id);
@@ -196,9 +200,9 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             </p>
           )}
           
-          {clase.notas && (
+          {(notas || clase.notas) && (
             <p className="mt-2 text-xs bg-white bg-opacity-20 rounded px-2 py-1">
-              📝 {clase.notas}
+              📝 {notas || clase.notas}
             </p>
           )}
         </div>
@@ -212,7 +216,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             Estado
           </button>
           
-          {clase.notas && (
+          {(notas || clase.notas) && (
             <button
               onClick={handleEditarNotas}
               className="px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-medium transition-colors"
