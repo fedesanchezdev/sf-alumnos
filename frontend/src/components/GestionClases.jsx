@@ -44,10 +44,18 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showResumen, setShowResumen] = useState(false);
+  const [showEditNotas, setShowEditNotas] = useState(false);
   const [notas, setNotas] = useState(clase.notas || '');
+  const [notasTemp, setNotasTemp] = useState(clase.notas || '');
   const [fechaReprogramada, setFechaReprogramada] = useState(
     clase.fechaReprogramada ? new Date(clase.fechaReprogramada).toISOString().split('T')[0] : ''
   );
+
+  // Actualizar notas cuando cambie la clase
+  useEffect(() => {
+    setNotas(clase.notas || '');
+    setNotasTemp(clase.notas || '');
+  }, [clase.notas]);
 
   const estadoActual = ESTADOS_CLASES[clase.estado] || ESTADOS_CLASES.no_iniciada;
 
@@ -85,6 +93,66 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
     }
   };
 
+  const handleActualizarNotas = async () => {
+    setIsUpdating(true);
+    try {
+      const data = {
+        estado: clase.estado, // Mantener el estado actual
+        notas: notasTemp
+      };
+
+      // Si la clase tiene fecha reprogramada, mantenerla
+      if (clase.fechaReprogramada) {
+        data.fechaReprogramada = clase.fechaReprogramada;
+      }
+
+      await clasesService.actualizarEstado(clase._id, data);
+      setNotas(notasTemp); // Actualizar el estado local
+      onEstadoChange(clase._id); // Refrescar la vista
+      setShowEditNotas(false);
+    } catch (error) {
+      console.error('Error al actualizar notas:', error);
+      alert('Error al actualizar las notas');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleEditarNotas = () => {
+    setNotasTemp(notas); // Cargar las notas actuales en el estado temporal
+    setShowEditNotas(true);
+  };
+
+  const handleEliminarNotas = async () => {
+    if (!confirm('¿Estás seguro de que quieres eliminar las notas de esta clase?')) {
+      return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      const data = {
+        estado: clase.estado, // Mantener el estado actual
+        notas: '' // Eliminar las notas
+      };
+
+      // Si la clase tiene fecha reprogramada, mantenerla
+      if (clase.fechaReprogramada) {
+        data.fechaReprogramada = clase.fechaReprogramada;
+      }
+
+      await clasesService.actualizarEstado(clase._id, data);
+      setNotas(''); // Actualizar el estado local
+      setNotasTemp(''); // Limpiar el estado temporal
+      onEstadoChange(clase._id); // Refrescar la vista
+      setShowEditNotas(false);
+    } catch (error) {
+      console.error('Error al eliminar notas:', error);
+      alert('Error al eliminar las notas');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <>
       <div className={`${estadoActual.color} ${estadoActual.textColor} p-4 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105`}>
@@ -116,13 +184,24 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
         </div>
 
         {/* Botones de acción */}
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-1">
           <button
             onClick={handleEstadoClick}
             className="flex-1 px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-medium transition-colors"
           >
             Estado
           </button>
+          
+          {clase.notas && (
+            <button
+              onClick={handleEditarNotas}
+              className="px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-medium transition-colors"
+              title="Editar notas"
+            >
+              ✏️
+            </button>
+          )}
+          
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -222,6 +301,66 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             }
           }}
         />
+      )}
+
+      {/* Modal para editar notas */}
+      {showEditNotas && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold mb-4">
+              Editar notas de la clase
+            </h3>
+            
+            <p className="text-sm text-gray-600 mb-4">
+              📅 Fecha: {formatearFecha(clase.fecha)}
+            </p>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Notas
+              </label>
+              <textarea
+                value={notasTemp}
+                onChange={(e) => setNotasTemp(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows="4"
+                placeholder="Agregar notas sobre la clase..."
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowEditNotas(false);
+                  setNotasTemp(notas); // Revertir cambios
+                }}
+                disabled={isUpdating}
+                className="px-4 py-2 text-gray-600 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              
+              {notas && (
+                <button
+                  onClick={handleEliminarNotas}
+                  disabled={isUpdating}
+                  className="px-4 py-2 text-red-600 bg-red-100 rounded hover:bg-red-200 disabled:opacity-50"
+                  title="Eliminar notas"
+                >
+                  🗑️
+                </button>
+              )}
+              
+              <button
+                onClick={handleActualizarNotas}
+                disabled={isUpdating}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {isUpdating ? 'Guardando...' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
