@@ -10,37 +10,65 @@ import GestionClases from './components/GestionClases';
 import GestionPartituras from './components/GestionPartituras';
 import AdminPartituras from './components/AdminPartituras';
 import ResumenClasesUsuario from './components/ResumenClasesUsuario';
+import ResumenClasePage from './components/ResumenClasePage';
 import MisClases from './components/MisClases';
+import MisPagos from './components/MisPagos';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function AppContent() {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+  
+  // Detectar si estamos en la página de resumen standalone
+  const isStandaloneResumen = window.location.pathname.includes('/admin/resumen-clase/') && 
+                              window.location.search.includes('newTab=true');
+
+  // Si estamos cargando la autenticación, mostrar spinner
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {isAuthenticated() && (
+      {/* Solo mostrar navegación si no es standalone y está autenticado */}
+      {isAuthenticated() && !isStandaloneResumen && (
         <>
           <Navbar />
           <Sidebar />
         </>
       )}
       
-      {/* Contenedor principal con margen para sidebar */}
-      <div className={`${isAuthenticated() ? 'ml-64 pt-24' : ''}`}>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={
-              isAuthenticated() ? (
-                <Navigate to={isAdmin() ? "/clases" : "/mis-clases"} replace />
-              ) : (
-                <Login />
-              )
-            } 
-          />
+      {/* Contenedor principal con margen para sidebar solo si no es standalone */}
+      <div className={`${isAuthenticated() && !isStandaloneResumen ? 'ml-64 pt-24' : ''}`}>
+        <Routes>        {/* Ruta de resumen de clase - DEBE ir antes que otras rutas admin */}
+        <Route 
+          path="/admin/resumen-clase/:claseId" 
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <ResumenClasePage />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/login" 
+          element={
+            isAuthenticated() ? (
+              <Navigate to={isAdmin() ? "/clases" : "/mis-clases"} replace />
+            ) : (
+              <Login />
+            )
+          } 
+        />
         
         <Route 
           path="/dashboard" 
@@ -105,11 +133,22 @@ function AppContent() {
           } 
         />
 
+
+
         <Route 
           path="/mis-clases" 
           element={
             <ProtectedRoute>
               <MisClases />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/mis-pagos" 
+          element={
+            <ProtectedRoute>
+              <MisPagos />
             </ProtectedRoute>
           } 
         />
@@ -134,6 +173,7 @@ function AppContent() {
           } 
         />
         
+        {/* Catch-all route */}
         <Route 
           path="*" 
           element={<Navigate to="/" replace />} 
@@ -148,6 +188,7 @@ function App() {
   return (
     <AuthProvider>
       <Router
+        basename="/alumnos"
         future={{
           v7_startTransition: true,
           v7_relativeSplatPath: true

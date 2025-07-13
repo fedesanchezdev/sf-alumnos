@@ -147,18 +147,6 @@ const AdminPartituras = () => {
       setLoading(true);
       setError('');
       
-      // Debug: Verificar estructura que se envía al backend
-      console.log('=== DEBUG: Enviando partitura al backend ===');
-      console.log('FormData completo:', formData);
-      if (formData.movimientos.length > 0) {
-        console.log('Primer movimiento estructura:', {
-          nombre: formData.movimientos[0].nombre,
-          subtitulo: formData.movimientos[0].subtitulo,
-          audios: formData.movimientos[0].audios,
-          cantidadAudios: formData.movimientos[0].audios?.length || 0
-        });
-      }
-      
       if (editingPartitura) {
         await partiturasService.actualizar(editingPartitura._id, formData);
         setSuccess('Partitura actualizada exitosamente');

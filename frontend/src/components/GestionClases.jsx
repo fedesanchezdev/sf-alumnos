@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { clasesService, usuariosService, resumenClaseService } from '../services/api';
-import { formatearFecha, formatearFechaCorta, esHoy, esMañana } from '../utils/fechas';
+import { formatearFecha, formatearFechaCorta, esHoy, esMañana, fechaLocalAUTC } from '../utils/fechas';
 import { useAuth } from '../context/AuthContext';
 import ResumenClase from './ResumenClase';
 import ResumenClaseCard from './ResumenClaseCard';
@@ -79,7 +79,8 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
 
       // Si es reprogramar, incluir fecha
       if (nuevoEstado === 'reprogramar' && fechaReprogramada) {
-        data.fechaReprogramada = fechaReprogramada;
+        // Usar fechaLocalAUTC para enviar la fecha correctamente al backend
+        data.fechaReprogramada = fechaLocalAUTC(fechaReprogramada);
       }
 
       await clasesService.actualizarEstado(clase._id, data);
@@ -96,29 +97,21 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
   const handleActualizarNotas = async () => {
     setIsUpdating(true);
     try {
-      console.log('Actualizando notas para clase:', clase._id);
-      console.log('Notas nuevas:', notasTemp);
-      
       const data = {
-        estado: clase.estado, // Mantener el estado actual
+        estado: clase.estado,
         notas: notasTemp
       };
 
-      // Si la clase tiene fecha reprogramada, mantenerla
       if (clase.fechaReprogramada) {
         data.fechaReprogramada = clase.fechaReprogramada;
       }
 
-      console.log('Datos a enviar:', data);
-      const response = await clasesService.actualizarEstado(clase._id, data);
-      console.log('Respuesta del servidor:', response);
+      await clasesService.actualizarEstado(clase._id, data);
       
-      setNotas(notasTemp); // Actualizar el estado local
-      clase.notas = notasTemp; // Forzar actualización del objeto clase
-      onEstadoChange(clase._id); // Refrescar la vista
+      setNotas(notasTemp);
+      onEstadoChange(clase._id);
       setShowEditNotas(false);
       
-      console.log('Notas actualizadas exitosamente');
     } catch (error) {
       console.error('Error al actualizar notas:', error);
       alert('Error al actualizar las notas: ' + (error.message || 'Error desconocido'));
@@ -133,7 +126,6 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
   };
 
   const handleEliminarNotas = async () => {
-    // Usar window.confirm para asegurar compatibilidad
     const confirmDelete = window.confirm('¿Estás seguro de que quieres eliminar las notas de esta clase?');
     if (!confirmDelete) {
       return;
@@ -141,34 +133,25 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
     
     setIsUpdating(true);
     try {
-      console.log('Eliminando notas para clase:', clase._id);
-      
       const data = {
-        estado: clase.estado, // Mantener el estado actual
-        notas: '' // Eliminar las notas
+        estado: clase.estado,
+        notas: ''
       };
 
-      // Si la clase tiene fecha reprogramada, mantenerla
       if (clase.fechaReprogramada) {
         data.fechaReprogramada = clase.fechaReprogramada;
       }
 
-      console.log('Datos a enviar:', data);
-      const response = await clasesService.actualizarEstado(clase._id, data);
-      console.log('Respuesta del servidor:', response);
+      await clasesService.actualizarEstado(clase._id, data);
       
-      // Actualizar estados locales inmediatamente
-      setNotas(''); // Actualizar el estado local
-      setNotasTemp(''); // Limpiar el estado temporal
-      setShowEditNotas(false); // Cerrar modal
-      
-      // Forzar actualización del objeto clase localmente
-      clase.notas = '';
+      // Actualizar estado local
+      setNotas('');
+      setNotasTemp('');
+      setShowEditNotas(false);
       
       // Refrescar la vista
       onEstadoChange(clase._id);
       
-      console.log('Notas eliminadas exitosamente');
     } catch (error) {
       console.error('Error al eliminar notas:', error);
       alert('Error al eliminar las notas: ' + (error.message || 'Error desconocido'));
@@ -186,7 +169,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
         </div>
         
         <div className="text-sm">
-          <p className="font-bold mb-1">{formatearFecha(clase.fecha)}</p>
+          <p className="font-bold mb-1">{formatearFechaCorta(clase.fecha)}</p>
           
           {clase.pago && (
             <p className="opacity-90">
@@ -196,13 +179,13 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
           
           {clase.fechaReprogramada && (
             <p className="mt-2 text-xs bg-white bg-opacity-30 rounded px-2 py-1">
-              📅 Reprogramada para: {formatearFecha(clase.fechaReprogramada)}
+              📅 Reprogramada para: {formatearFechaCorta(clase.fechaReprogramada)}
             </p>
           )}
           
-          {(notas || clase.notas) && (
+          {notas && (
             <p className="mt-2 text-xs bg-white bg-opacity-20 rounded px-2 py-1">
-              📝 {notas || clase.notas}
+              📝 {notas}
             </p>
           )}
         </div>
@@ -216,7 +199,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             Estado
           </button>
           
-          {(notas || clase.notas) && (
+          {notas && (
             <button
               onClick={handleEditarNotas}
               className="px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-medium transition-colors"
@@ -226,15 +209,27 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             </button>
           )}
           
-          <button
+          <a
+            href={`/alumnos/admin/resumen-clase/${clase._id}?usuarioId=${usuarioId}&fecha=${encodeURIComponent(clase.fecha)}&newTab=true`}
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={(e) => {
               e.stopPropagation();
-              setShowResumen(true);
+              // Verificar que tengamos usuarioId
+              if (!usuarioId) {
+                e.preventDefault();
+                alert('Error: No se puede abrir el resumen. Usuario no seleccionado.');
+                return;
+              }
+              console.log('Abriendo resumen via enlace');
+              console.log('Usuario ID:', usuarioId);
+              console.log('Clase ID:', clase._id);
+              console.log('URL generada:', `/alumnos/admin/resumen-clase/${clase._id}?usuarioId=${usuarioId}&fecha=${encodeURIComponent(clase.fecha)}&newTab=true`);
             }}
-            className="flex-1 px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-medium transition-colors"
+            className="flex-1 px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-medium transition-colors text-center inline-block"
           >
             📝 Resumen
-          </button>
+          </a>
         </div>
       </div>
 
@@ -247,12 +242,12 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             </h3>
             
             <p className="text-sm text-gray-600 mb-2">
-              📅 Fecha original: {formatearFecha(clase.fecha)}
+              📅 Fecha original: {formatearFechaCorta(clase.fecha)}
             </p>
             
             {clase.fechaReprogramada && (
               <p className="text-sm text-amber-600 mb-4 bg-amber-50 p-2 rounded">
-                🔄 Reprogramada para: {formatearFecha(clase.fechaReprogramada)}
+                🔄 Reprogramada para: {formatearFechaCorta(clase.fechaReprogramada)}
               </p>
             )}
 
@@ -336,7 +331,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             </h3>
             
             <p className="text-sm text-gray-600 mb-4">
-              📅 Fecha: {formatearFecha(clase.fecha)}
+              📅 Fecha: {formatearFechaCorta(clase.fecha)}
             </p>
 
             <div className="mb-4">
@@ -364,7 +359,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
                 Cancelar
               </button>
               
-              {(notas || clase.notas) && (
+              {notas && (
                 <button
                   onClick={handleEliminarNotas}
                   disabled={isUpdating}
@@ -530,6 +525,35 @@ const GestionClases = ({ usuarioSeleccionado }) => {
   useEffect(() => {
     cargarResumen();
   }, [clasesUltimoPago, historialClases]);
+
+  // Escuchar eventos de actualización de resumen desde otras pestañas
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'resumen_update_event' && e.newValue) {
+        try {
+          const event = JSON.parse(e.newValue);
+          console.log('📝 Evento de resumen detectado:', event);
+          
+          // Verificar si el evento es para el usuario actual
+          if (event.type === 'resumen_guardado' && event.usuarioId === usuarioActual) {
+            console.log('🔄 Recargando resúmenes por actualización desde nueva pestaña...');
+            // Recargar resúmenes del usuario actual
+            cargarResumenes();
+          }
+        } catch (error) {
+          console.error('Error al procesar evento de resumen:', error);
+        }
+      }
+    };
+
+    // Agregar listener para cambios en localStorage
+    window.addEventListener('storage', handleStorageChange);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, [usuarioActual]); // Dependencia en usuarioActual para reaccionar cuando cambie
 
   const cargarClases = async () => {
     if (!usuarioActual) return;

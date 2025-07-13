@@ -78,11 +78,28 @@ export const actualizarEstadoClase = async (req, res) => {
 
     // Actualizar la clase
     clase.estado = estado;
-    clase.notas = notas || clase.notas;
+    // Si notas está definido en el request, usarlo (incluso si es una cadena vacía)
+    if (notas !== undefined) {
+      clase.notas = notas;
+    }
     
     if (estado === 'reprogramar' && fechaReprogramada) {
-      const fechaAjustada = new Date(fechaReprogramada);
-      fechaAjustada.setHours(12, 0, 0, 0);
+      // Si la fecha ya es un objeto Date, usarla directamente
+      // Si es un string, crear Date y ajustar a mediodía UTC (no local)
+      let fechaAjustada;
+      if (fechaReprogramada instanceof Date) {
+        fechaAjustada = fechaReprogramada;
+      } else {
+        // CORRECCIÓN: Para strings YYYY-MM-DD, crear fecha UTC directamente
+        if (typeof fechaReprogramada === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fechaReprogramada)) {
+          const [año, mes, dia] = fechaReprogramada.split('-').map(Number);
+          fechaAjustada = new Date(Date.UTC(año, mes - 1, dia, 12, 0, 0, 0));
+        } else {
+          fechaAjustada = new Date(fechaReprogramada);
+          fechaAjustada.setUTCHours(12, 0, 0, 0); // Usar setUTCHours en lugar de setHours
+        }
+      }
+      
       clase.fechaReprogramada = fechaAjustada;
     }
 

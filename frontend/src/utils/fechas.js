@@ -60,12 +60,19 @@ export const formatearFecha = (fecha, opciones = {}) => {
  * @returns {string} - Fecha formateada (ej: "15 de julio de 2025")
  */
 export const formatearFechaCorta = (fecha) => {
-  return formatearFecha(fecha, {
+  if (!fecha) return '';
+  
+  const fechaAjustada = fechaUTCALocal(fecha);
+  
+  const opciones = {
     weekday: undefined,
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  });
+  };
+  
+  // Forzar idioma español
+  return fechaAjustada.toLocaleDateString('es-ES', opciones);
 };
 
 /**
@@ -83,6 +90,59 @@ export const formatearFechaMuyCorta = (fecha) => {
 };
 
 /**
+ * Formatea una fecha para mostrar día, mes y año en formato compacto español
+ * @param {string|Date} fecha - Fecha a formatear  
+ * @returns {string} - Fecha formateada (ej: "15 jul 2025")
+ */
+export const formatearFechaCompacta = (fecha) => {
+  return formatearFecha(fecha, {
+    weekday: undefined,
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+};
+
+/**
+ * Formatea una fecha en formato DD/MM/YY
+ * @param {string|Date} fecha - Fecha a formatear
+ * @returns {string} - Fecha formateada (ej: "15/07/25")
+ */
+export const formatearFechaNumericaCorta = (fecha) => {
+  if (!fecha) return '';
+  
+  const fechaAjustada = fechaUTCALocal(fecha);
+  
+  const dia = fechaAjustada.getDate().toString().padStart(2, '0');
+  const mes = (fechaAjustada.getMonth() + 1).toString().padStart(2, '0');
+  const año = fechaAjustada.getFullYear().toString().slice(-2);
+  
+  return `${dia}/${mes}/${año}`;
+};
+
+/**
+ * Formatea una fecha en formato "Mes DD, YYYY" en español
+ * @param {string|Date} fecha - Fecha a formatear
+ * @returns {string} - Fecha formateada (ej: "julio 15, 2025")
+ */
+export const formatearFechaAmericanaEspañol = (fecha) => {
+  if (!fecha) return '';
+  
+  const fechaAjustada = fechaUTCALocal(fecha);
+  
+  const meses = [
+    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+  ];
+  
+  const dia = fechaAjustada.getDate();
+  const mes = meses[fechaAjustada.getMonth()];
+  const año = fechaAjustada.getFullYear();
+  
+  return `${mes} ${dia}, ${año}`;
+};
+
+/**
  * Convierte una fecha local a UTC preservando el día calendario
  * Útil para enviar fechas al backend
  * @param {string|Date} fecha - Fecha local
@@ -91,6 +151,13 @@ export const formatearFechaMuyCorta = (fecha) => {
 export const fechaLocalAUTC = (fecha) => {
   if (!fecha) return null;
   
+  // Si es un string en formato YYYY-MM-DD, parsearlo manualmente
+  if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+    const [año, mes, dia] = fecha.split('-').map(Number);
+    return new Date(Date.UTC(año, mes - 1, dia, 12, 0, 0, 0));
+  }
+  
+  // Si es una fecha existente, usar sus componentes locales
   const fechaLocal = new Date(fecha);
   
   // Crear fecha UTC usando los componentes de fecha local
