@@ -3,7 +3,7 @@ import { partiturasService, resumenClaseService } from '../services/api';
 import { formatearFechaCorta } from '../utils/fechas';
 import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
 
-const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExistente }) => {
+const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExistente, isStandalone = false }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [partituras, setPartituras] = useState([]);
@@ -238,7 +238,7 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className={`${isStandalone ? '' : 'fixed inset-0 bg-black bg-opacity-50'} flex items-center justify-center ${isStandalone ? 'p-6' : 'z-50'}`}>
         <div className="bg-white rounded-lg p-6">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-2 text-center">Cargando...</p>
@@ -247,21 +247,31 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
     );
   }
 
+  const containerClass = isStandalone 
+    ? "bg-white rounded-lg w-full" 
+    : "fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4";
+
+  const contentClass = isStandalone 
+    ? "w-full" 
+    : "bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto";
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className={containerClass}>
+      <div className={contentClass}>
         <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              📚 Resumen de Clase
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
-            >
-              ×
-            </button>
-          </div>
+          {!isStandalone && (
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                📚 Resumen de Clase
+              </h2>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           {/* Información de la clase */}
           <div className="bg-blue-50 rounded-lg p-4 mb-6">
@@ -457,13 +467,15 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
 
             {/* Botones */}
             <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300"
-              >
-                Cancelar
-              </button>
+              {!isStandalone && (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300"
+                >
+                  Cancelar
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={saving}

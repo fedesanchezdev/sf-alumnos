@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { resumenClaseService, clasesService } from '../services/api';
-import { formatearFecha, formatearFechaCorta } from '../utils/fechas';
+import { formatearFecha, formatearFechaCorta, formatearFechaAmericanaEspañol } from '../utils/fechas';
 import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
 
 const LoadingSpinner = ({ title, subtitle, size = "normal" }) => {
@@ -52,28 +52,24 @@ const ResumenCard = ({ resumen }) => {
 
   return (
     <div className="bg-white border-2 border-blue-200 rounded-lg p-4 shadow-md hover:shadow-lg transition-shadow">
-      {/* Header - igual que admin */}
+      {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            📚 Resumen de Clase
-          </h4>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 font-bold">
             📅 {resumen.clase?.fecha ? formatearFechaCorta(resumen.clase.fecha) : 'Fecha no disponible'}
           </p>
         </div>
-        {/* Sin botón eliminar para usuarios normales */}
       </div>
 
-      {/* Obras Estudiadas - igual que admin */}
+      {/* Obras */}
       {resumen.obrasEstudiadas && resumen.obrasEstudiadas.length > 0 && (
         <div className="mb-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">
-            🎼 Obras Estudiadas ({resumen.obrasEstudiadas.length})
+          <h5 className="text-sm font-medium text-gray-700 mb-2 text-left">
+            🎼 Obras ({resumen.obrasEstudiadas.length})
           </h5>
           <div className="space-y-2">
             {resumen.obrasEstudiadas.map((obra, index) => (
-              <div key={index} className="bg-gray-50 p-3 rounded-md">
+              <div key={index} className="bg-gray-50 p-3 rounded-md text-left">
                 <div className="font-medium text-gray-800">
                   {obra.compositor} - {obra.obra}
                 </div>
@@ -93,24 +89,24 @@ const ResumenCard = ({ resumen }) => {
         </div>
       )}
 
-      {/* Próxima Clase - igual que admin */}
+      {/* Próxima Clase */}
       {resumen.objetivosProximaClase && (
         <div className="mb-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">
+          <h5 className="text-sm font-medium text-gray-700 mb-2 text-left">
             🎯 Próxima Clase
           </h5>
-          <div className="bg-green-50 p-3 rounded-md">
+          <div className="bg-green-50 p-3 rounded-md text-left">
             <p className="text-sm text-gray-700">{resumen.objetivosProximaClase}</p>
           </div>
         </div>
       )}
 
-      {/* Botón de acción - SOLO WhatsApp para usuarios normales */}
-      <div className="flex gap-2 pt-3 border-t border-gray-200">
+      {/* Botón de WhatsApp */}
+      <div className="pt-3 border-t border-gray-200">
         <button
           onClick={handleEnviarWhatsApp}
           disabled={enviando}
-          className="flex-1 px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
+          className="w-full px-3 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors"
         >
           {enviando ? 'Enviando...' : '📱 WhatsApp'}
         </button>
@@ -120,98 +116,132 @@ const ResumenCard = ({ resumen }) => {
 };
 
 const ClaseCard = ({ clase }) => {
-  // Estados de clases - exactamente igual que la vista de admin
+  // Estados de clases con colores más definidos para el formato vertical
   const ESTADOS_CLASES = {
     no_iniciada: {
       label: 'No iniciada',
-      color: 'bg-gray-400',
-      textColor: 'text-white',
-      icon: '⚪'
+      color: 'bg-gray-50',
+      textColor: 'text-gray-800',
+      borderColor: 'border-gray-200',
+      footerColor: 'bg-gray-100',
+      icon: '⏳'
     },
     tomada: {
       label: 'Tomada',
-      color: 'bg-green-500',
-      textColor: 'text-white',
-      icon: '🟢'
+      color: 'bg-green-50',
+      textColor: 'text-green-800',
+      borderColor: 'border-green-200',
+      footerColor: 'bg-green-100',
+      icon: '✅'
     },
     ausente: {
       label: 'Ausente',
-      color: 'bg-red-500',
-      textColor: 'text-white',
-      icon: '🔴'
+      color: 'bg-red-50',
+      textColor: 'text-red-800',
+      borderColor: 'border-red-200',
+      footerColor: 'bg-red-100',
+      icon: '❌'
     },
     reprogramar: {
-      label: 'Reprogramar',
-      color: 'bg-amber-500',
-      textColor: 'text-white',
-      icon: '🟡'
+      label: 'Reprogramada',
+      color: 'bg-amber-50',
+      textColor: 'text-amber-800',
+      borderColor: 'border-amber-200',
+      footerColor: 'bg-amber-100',
+      icon: '🔄'
     },
     recuperada: {
       label: 'Recuperada',
-      color: 'bg-purple-500',
-      textColor: 'text-white',
-      icon: '🟣'
+      color: 'bg-purple-50',
+      textColor: 'text-purple-800',
+      borderColor: 'border-purple-200',
+      footerColor: 'bg-purple-100',
+      icon: '🔁'
     },
-    // Agregamos los estados adicionales que pueden aparecer
     realizada: {
       label: 'Realizada',
-      color: 'bg-green-500',
-      textColor: 'text-white',
+      color: 'bg-green-50',
+      textColor: 'text-green-800',
+      borderColor: 'border-green-200',
+      footerColor: 'bg-green-100',
       icon: '✅'
     },
     cancelada: {
       label: 'Cancelada',
-      color: 'bg-red-500',
-      textColor: 'text-white',
-      icon: '❌'
+      color: 'bg-red-50',
+      textColor: 'text-red-800',
+      borderColor: 'border-red-200',
+      footerColor: 'bg-red-100',
+      icon: '🚫'
     },
     pendiente: {
       label: 'Pendiente',
-      color: 'bg-blue-500',
-      textColor: 'text-white',
+      color: 'bg-blue-50',
+      textColor: 'text-blue-800',
+      borderColor: 'border-blue-200',
+      footerColor: 'bg-blue-100',
       icon: '⏰'
     }
   };
 
   const estadoActual = ESTADOS_CLASES[clase.estado] || ESTADOS_CLASES.no_iniciada;
+  
+  // Extraer información de fecha
+  const fechaClase = new Date(clase.fecha);
+  const mes = fechaClase.toLocaleDateString('es-ES', { month: 'long' }).toUpperCase();
+  const dia = fechaClase.getDate();
 
   return (
-    <div className={`${estadoActual.color} ${estadoActual.textColor} p-4 rounded-lg shadow-md transition-all duration-200 transform hover:scale-105`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-2xl">{estadoActual.icon}</span>
-        <span className="text-sm font-semibold">{estadoActual.label}</span>
-      </div>
-      
-      <div className="text-sm">
-        <p className="font-bold mb-1">{formatearFechaCorta(clase.fecha)}</p>
-        
-        {clase.pago && (
-          <p className="opacity-90">
-            Pago: ${clase.pago.monto?.toLocaleString()}
-          </p>
-        )}
-        
-        {clase.fechaReprogramada && (
-          <p className="mt-2 text-xs bg-white bg-opacity-30 rounded px-2 py-1">
-            📅 Reprogramada para: {formatearFechaCorta(clase.fechaReprogramada)}
-          </p>
-        )}
-        
-        {clase.notas && (
-          <p className="mt-2 text-xs bg-white bg-opacity-20 rounded px-2 py-1">
-            📝 {clase.notas}
-          </p>
-        )}
-
-        {/* Información adicional */}
-        {clase.duracion && (
-          <p className="mt-2 text-xs bg-white bg-opacity-20 rounded px-2 py-1">
-            ⏱️ Duración: {clase.duracion} min
-          </p>
-        )}
+    <div className={`${estadoActual.color} ${estadoActual.borderColor} border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
+      {/* Header: Mes */}
+      <div className={`${estadoActual.footerColor} px-4 py-3 text-center border-b ${estadoActual.borderColor}`}>
+        <h4 className={`text-sm font-bold ${estadoActual.textColor} tracking-wide`}>
+          {mes}
+        </h4>
       </div>
 
-      {/* Para usuarios normales NO hay botones de acción, solo lectura */}
+      {/* Body: Día grande y comentarios */}
+      <div className="px-4 py-6 text-center">
+        {/* Número del día grande */}
+        <div className={`text-4xl font-bold ${estadoActual.textColor} mb-2`}>
+          {dia}
+        </div>
+
+        {/* Comentarios */}
+        <div className="space-y-2 text-sm">
+          {/* Fecha de reprogramación */}
+          {clase.fechaReprogramada && (
+            <div className={`${estadoActual.textColor} opacity-80`}>
+              <p className="font-medium">Reprogramada para:</p>
+              <p className="text-xs">
+                {new Date(clase.fechaReprogramada).toLocaleDateString('es-ES', {
+                  day: 'numeric',
+                  month: 'long'
+                })}
+              </p>
+            </div>
+          )}
+          
+          {/* Notas adicionales */}
+          {clase.notas && (
+            <div className={`${estadoActual.textColor} opacity-80`}>
+              <p className="text-xs leading-relaxed italic">
+                "{clase.notas}"
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer: Estado */}
+      <div className={`${estadoActual.footerColor} px-4 py-3 text-center border-t ${estadoActual.borderColor}`}>
+        <div className="flex items-center justify-center space-x-2">
+          <span className="text-lg">{estadoActual.icon}</span>
+          <span className={`text-sm font-semibold ${estadoActual.textColor}`}>
+            {estadoActual.label}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };
@@ -219,7 +249,10 @@ const ClaseCard = ({ clase }) => {
 const MisClases = () => {
   const { usuario } = useAuth();
   const [resumenes, setResumenes] = useState([]);
-  const [clases, setClases] = useState([]);
+  const [clases, setClases] = useState({
+    ultimoPago: [],
+    historial: []
+  });
   const [loadingResumenes, setLoadingResumenes] = useState(true);
   const [loadingClases, setLoadingClases] = useState(true);
 
@@ -237,7 +270,11 @@ const MisClases = () => {
       const resumenesValidos = (response.data.resumenes || []).filter(resumen => 
         resumen && resumen.clase && resumen.clase.fecha
       );
-      setResumenes(resumenesValidos);
+      // Ordenar por fecha descendente (más reciente primero)
+      const resumenesOrdenados = resumenesValidos.sort((a, b) => 
+        new Date(b.clase.fecha) - new Date(a.clase.fecha)
+      );
+      setResumenes(resumenesOrdenados);
     } catch (error) {
       console.error('Error al cargar resúmenes:', error);
       setResumenes([]);
@@ -249,14 +286,41 @@ const MisClases = () => {
   const cargarClases = async () => {
     try {
       setLoadingClases(true);
-      const response = await clasesService.obtenerPorUsuario(usuario._id);
-      // Mostrar todas las clases del usuario ordenadas por fecha descendente
-      const todasLasClases = (response.data || [])
-        .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-      setClases(todasLasClases);
+      const response = await clasesService.obtenerSeparadas(usuario._id);
+      
+      // Función para ordenar clases: no iniciadas primero, luego tomadas, luego por fecha
+      const ordenarClases = (clasesArray) => {
+        return clasesArray.sort((a, b) => {
+          // Prioridad por estado: no_iniciada > tomada > otros estados
+          const prioridadEstado = (estado) => {
+            switch (estado) {
+              case 'no_iniciada': return 1;
+              case 'tomada': return 2;
+              default: return 3;
+            }
+          };
+          
+          const prioridadA = prioridadEstado(a.estado);
+          const prioridadB = prioridadEstado(b.estado);
+          
+          if (prioridadA !== prioridadB) {
+            return prioridadA - prioridadB;
+          }
+          
+          // Si tienen el mismo estado, ordenar por fecha (más reciente primero)
+          return new Date(b.fecha) - new Date(a.fecha);
+        });
+      };
+
+      const clasesData = response.data || { clasesUltimoPago: [], historialClases: [] };
+      
+      setClases({
+        ultimoPago: ordenarClases(clasesData.clasesUltimoPago || []),
+        historial: ordenarClases(clasesData.historialClases || [])
+      });
     } catch (error) {
       console.error('Error al cargar clases:', error);
-      setClases([]);
+      setClases({ ultimoPago: [], historial: [] });
     } finally {
       setLoadingClases(false);
     }
@@ -278,10 +342,14 @@ const MisClases = () => {
             subtitle="Obteniendo tus resúmenes de clase"
           />
         ) : resumenes.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {resumenes.map((resumen) => (
-              <ResumenCard key={resumen._id} resumen={resumen} />
-            ))}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 max-w-none">
+              {resumenes.map((resumen) => (
+                <div key={resumen._id} className="max-w-sm">
+                  <ResumenCard resumen={resumen} />
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -303,22 +371,58 @@ const MisClases = () => {
         {loadingClases ? (
           <LoadingSpinner 
             title="Cargando clases..." 
-            subtitle="Obteniendo tu historial de clases"
+            subtitle="Obteniendo tus clases programadas"
           />
-        ) : clases.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {clases.map((clase) => (
-              <ClaseCard key={clase._id} clase={clase} />
-            ))}
+        ) : (clases.ultimoPago.length > 0 || clases.historial.length > 0) ? (
+          <div className="space-y-6">
+            {/* Clases del último pago */}
+            {clases.ultimoPago.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <span className="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
+                  Clases del último pago ({clases.ultimoPago.length})
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                  {clases.ultimoPago.map((clase) => (
+                    <ClaseCard
+                      key={clase._id}
+                      clase={clase}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Historial de clases */}
+            {clases.historial.length > 0 && (
+              <details className="bg-white rounded-lg border border-gray-200">
+                <summary className="p-6 cursor-pointer hover:bg-gray-50 rounded-t-lg">
+                  <span className="text-lg font-semibold text-gray-900 flex items-center">
+                    <span className="w-3 h-3 bg-gray-400 rounded-full mr-3"></span>
+                    Historial de clases ({clases.historial.length})
+                  </span>
+                </summary>
+                <div className="px-6 pb-6">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                    {clases.historial.map((clase) => (
+                      <ClaseCard
+                        key={clase._id}
+                        clase={clase}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </details>
+            )}
           </div>
         ) : (
           <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <div className="text-4xl mb-4">📅</div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No hay clases registradas
+              No hay clases programadas
             </h3>
             <p className="text-gray-600">
-              Tus clases programadas y su historial aparecerán aquí.
+              Tus próximas clases aparecerán aquí una vez que sean programadas.
             </p>
           </div>
         )}

@@ -159,7 +159,25 @@ export const obtenerPagosPorUsuario = async (req, res) => {
       .sort({ fechaPago: -1 })
       .lean();
 
-    res.json(pagos);
+    // Para cada pago, obtener sus clases asociadas
+    const pagosConClases = await Promise.all(
+      pagos.map(async (pago) => {
+        const clases = await Clase.find({
+          pago: pago._id
+        })
+          .select('fecha estado')
+          .sort({ fecha: 1 })
+          .lean();
+
+        return {
+          ...pago,
+          clases: clases || [],
+          facturaUrl: pago.linkFactura || null
+        };
+      })
+    );
+
+    res.json(pagosConClases);
 
   } catch (error) {
     console.error('Error al obtener pagos por usuario:', error);

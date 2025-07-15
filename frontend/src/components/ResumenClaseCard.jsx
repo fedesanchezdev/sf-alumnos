@@ -55,10 +55,7 @@ const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            📚 Resumen de Clase
-          </h4>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 font-bold">
             📅 {resumen.clase?.fecha ? formatearFechaCorta(resumen.clase.fecha) : 'Fecha no disponible'}
           </p>
         </div>
@@ -71,15 +68,15 @@ const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
         </button>
       </div>
 
-      {/* Obras Estudiadas */}
+      {/* Obras */}
       {resumen.obrasEstudiadas && resumen.obrasEstudiadas.length > 0 && (
         <div className="mb-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">
-            🎼 Obras Estudiadas ({resumen.obrasEstudiadas.length})
+          <h5 className="text-sm font-medium text-gray-700 mb-2 text-left">
+            🎼 Obras ({resumen.obrasEstudiadas.length})
           </h5>
           <div className="space-y-2">
             {resumen.obrasEstudiadas.map((obra, index) => (
-              <div key={index} className="bg-gray-50 p-3 rounded-md">
+              <div key={index} className="bg-gray-50 p-3 rounded-md text-left">
                 <div className="font-medium text-gray-800">
                   {obra.compositor} - {obra.obra}
                 </div>
@@ -102,10 +99,10 @@ const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
       {/* Próxima Clase */}
       {resumen.objetivosProximaClase && (
         <div className="mb-4">
-          <h5 className="text-sm font-medium text-gray-700 mb-2">
+          <h5 className="text-sm font-medium text-gray-700 mb-2 text-left">
             🎯 Próxima Clase
           </h5>
-          <div className="bg-green-50 p-3 rounded-md">
+          <div className="bg-green-50 p-3 rounded-md text-left">
             <p className="text-sm text-gray-700">{resumen.objetivosProximaClase}</p>
           </div>
         </div>

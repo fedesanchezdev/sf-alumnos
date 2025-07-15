@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { pagosService, usuariosService, clasesService } from '../services/api';
 import { formatearFechaCorta } from '../utils/fechas';
 import { agruparPagosPorMes } from '../utils/pagosFechas';
+import { codificarParaWhatsApp } from '../utils/whatsapp';
 import LoadingSpinner from './LoadingSpinner';
 
 // Componente para renderizar una card de pago
@@ -59,45 +60,32 @@ const PagoCard = ({ pago, onEdit, onEliminar }) => {
     }
   };
 
-  // Función para compartir por WhatsApp
+  // Función para compartir por WhatsApp con formato específico
   const compartirPorWhatsApp = () => {
-    const nombre = `${pago.usuario.nombre} ${pago.usuario.apellido}`;
     const monto = `$${pago.monto.toLocaleString()}`;
     const fechas = formatearFechasClases(pago.clasesDetalle);
     const fechaPago = formatearFechaCorta(pago.fechaPago);
     
-    // Usar emoji más compatible
-    let mensaje = `♪ Pago de clases registrado\n\n`;
-    mensaje += `Alumno: ${nombre}\n`;
-    mensaje += `Importe: ${monto}\n`;
-    mensaje += `Clases: ${fechas}\n`;
-    mensaje += `Registrado el: ${fechaPago}`;
+    // Formato específico solicitado con emojis (usando el mismo método que resúmenes)
+    let mensaje = `⭐⭐⭐⭐⭐⭐⭐⭐⭐\n\n`;
+    mensaje += `*Pagado ${monto} - ${fechas}*\n\n`;
     
-    if (pago.descripcion) {
-      mensaje += `\n\nNotas: ${pago.descripcion}`;
+    // Agregar comentarios/descripción si existen
+    if (pago.descripcion && pago.descripcion.trim() !== '') {
+      mensaje += `💬 ${pago.descripcion}\n\n`;
     }
     
+    mensaje += `📅 ${fechaPago}\n\n`;
+    
+    // Agregar link de factura si existe
     if (pago.linkFactura) {
-      mensaje += `\n\nFactura disponible - descargue desde el sistema`;
+      mensaje += `*Descargar factura*\n📘📘📘📘📘📘📘📘📘\n${pago.linkFactura}`;
     }
     
-    const encodedMessage = encodeURIComponent(mensaje);
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    // Usar la misma codificación y URL que los resúmenes de clase
+    const mensajeCodificado = codificarParaWhatsApp(mensaje);
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${mensajeCodificado}`;
     window.open(whatsappUrl, '_blank');
-  };
-
-  // Función combinada: compartir y descargar
-  const compartirConFactura = () => {
-    // Primero descargar la factura si existe
-    if (pago.linkFactura) {
-      descargarFactura();
-      // Pequeño delay para que la descarga se inicie antes del WhatsApp
-      setTimeout(() => {
-        compartirPorWhatsApp();
-      }, 500);
-    } else {
-      compartirPorWhatsApp();
-    }
   };
 
   return (
@@ -110,12 +98,21 @@ const PagoCard = ({ pago, onEdit, onEliminar }) => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={compartirConFactura}
+            onClick={compartirPorWhatsApp}
             className="text-green-600 hover:text-green-800 text-sm font-medium"
-            title="Compartir por WhatsApp y descargar factura"
+            title="Compartir por WhatsApp"
           >
             📱
           </button>
+          {pago.linkFactura && (
+            <button
+              onClick={descargarFactura}
+              className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+              title="Descargar factura"
+            >
+              📄
+            </button>
+          )}
           <button
             onClick={() => onEdit(pago)}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -752,7 +749,6 @@ const GestionPagos = () => {
                         onChange={(e) => actualizarFechaIndividual(index, e.target.value)}
                         className="flex-1 p-2 border border-gray-300 rounded-md"
                         required
-                        min={new Date().toISOString().split('T')[0]}
                       />
                       {fechasIndividuales.length > 1 && (
                         <button
