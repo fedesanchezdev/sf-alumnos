@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { partiturasService, resumenClaseService } from '../services/api';
+import { partiturasService, resumenClaseService, usuariosService } from '../services/api';
 import { formatearFechaCorta } from '../utils/fechas';
 import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
 
@@ -8,6 +8,7 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
   const [saving, setSaving] = useState(false);
   const [partituras, setPartituras] = useState([]);
   const [compositores, setCompositores] = useState([]);
+  const [usuario, setUsuario] = useState(null);
   
   const [formData, setFormData] = useState({
     obrasEstudiadas: [],
@@ -28,12 +29,23 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
 
   const cargarDatos = async () => {
     try {
+      // Cargar partituras
       const partiurasResponse = await partiturasService.obtenerTodas();
       setPartituras(partiurasResponse.data);
       
       // Extraer compositores únicos
       const compositoresUnicos = [...new Set(partiurasResponse.data.map(p => p.compositor))].sort();
       setCompositores(compositoresUnicos);
+      
+      // Cargar información del usuario
+      if (usuarioId) {
+        try {
+          const usuarioResponse = await usuariosService.obtenerPorId(usuarioId);
+          setUsuario(usuarioResponse.data);
+        } catch (error) {
+          console.error('Error al cargar usuario:', error);
+        }
+      }
       
       // Si hay resumen existente, usarlo directamente
       if (resumenExistente) {
@@ -217,8 +229,12 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
         objetivosProximaClase: formData.objetivosProximaClase
       });
       
-      console.log('Mensaje generado:', mensaje);
-      enviarWhatsApp(mensaje);
+      // Enviar por WhatsApp con el teléfono del usuario si está disponible
+      if (usuario?.telefono) {
+        enviarWhatsApp(mensaje, usuario.telefono);
+      } else {
+        enviarWhatsApp(mensaje);
+      }
       
       console.log('💾 Resumen guardado exitosamente (WhatsApp), llamando onSave...');
       if (onSave) {
@@ -276,11 +292,20 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
           {/* Información de la clase */}
           <div className="bg-blue-50 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-blue-900 mb-2">Información de la Clase</h3>
-            <div className="text-sm">
+            <div className="text-sm space-y-1">
               <div>
                 <span className="text-blue-700 font-medium">Fecha:</span>
                 <span className="text-blue-900 ml-2">{formatearFechaCorta(fecha)}</span>
               </div>
+              {usuario && (
+                <div>
+                  <span className="text-blue-700 font-medium">Alumno:</span>
+                  <span className="text-blue-900 ml-2">{usuario.nombre} {usuario.apellido}</span>
+                  {usuario.telefono && (
+                    <span className="text-green-600 ml-2 text-xs">📱 WhatsApp disponible</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -487,9 +512,18 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
                 type="button"
                 onClick={handleGuardarYEnviarWhatsApp}
                 disabled={saving}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
               >
-                {saving ? 'Procesando...' : '📱 Enviar por WhatsApp'}
+                {saving ? 'Procesando...' : (
+                  <>
+                    📱 Enviar por WhatsApp
+                    {usuario?.telefono && (
+                      <span className="text-xs bg-green-800 px-1.5 py-0.5 rounded">
+                        Auto
+                      </span>
+                    )}
+                  </>
+                )}
               </button>
             </div>
           </form>

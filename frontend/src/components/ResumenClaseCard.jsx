@@ -27,7 +27,12 @@ const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
         objetivosProximaClase: resumen.objetivosProximaClase || ''
       });
       
-      enviarWhatsApp(mensaje);
+      // Enviar con teléfono del usuario del resumen si está disponible
+      if (resumen.usuario?.telefono) {
+        enviarWhatsApp(mensaje, resumen.usuario.telefono);
+      } else {
+        enviarWhatsApp(mensaje);
+      }
       
     } catch (error) {
       console.error('Error al enviar por WhatsApp:', error);

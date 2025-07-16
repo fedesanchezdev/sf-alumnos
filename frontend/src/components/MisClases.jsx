@@ -16,7 +16,7 @@ const LoadingSpinner = ({ title, subtitle, size = "normal" }) => {
   );
 };
 
-const ResumenCard = ({ resumen }) => {
+const ResumenCard = ({ resumen, usuario }) => {
   const [enviando, setEnviando] = useState(false);
 
   // Validar que resumen y clase existan
@@ -40,7 +40,12 @@ const ResumenCard = ({ resumen }) => {
         objetivosProximaClase: resumen.objetivosProximaClase || ''
       });
       
-      enviarWhatsApp(mensaje);
+      // Enviar con teléfono del usuario si está disponible
+      if (usuario?.telefono) {
+        enviarWhatsApp(mensaje, usuario.telefono);
+      } else {
+        enviarWhatsApp(mensaje);
+      }
       
     } catch (error) {
       console.error('Error al enviar por WhatsApp:', error);
@@ -192,41 +197,37 @@ const ClaseCard = ({ clase }) => {
   const dia = fechaClase.getDate();
 
   return (
-    <div className={`${estadoActual.color} ${estadoActual.borderColor} border-2 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`${estadoActual.color} ${estadoActual.borderColor} border rounded overflow-hidden shadow-sm hover:shadow-md transition-shadow min-h-[80px] sm:min-h-[90px]`}>
       {/* Header: Mes */}
-      <div className={`${estadoActual.footerColor} px-4 py-3 text-center border-b ${estadoActual.borderColor}`}>
-        <h4 className={`text-sm font-bold ${estadoActual.textColor} tracking-wide`}>
-          {mes}
+      <div className={`${estadoActual.footerColor} px-1 py-0.5 text-center border-b ${estadoActual.borderColor}`}>
+        <h4 className={`text-xs font-bold ${estadoActual.textColor} tracking-wide`}>
+          {mes.slice(0, 3)}
         </h4>
       </div>
 
       {/* Body: Día grande y comentarios */}
-      <div className="px-4 py-6 text-center">
+      <div className="px-1 py-1 text-center flex-1 flex flex-col justify-center">
         {/* Número del día grande */}
-        <div className={`text-4xl font-bold ${estadoActual.textColor} mb-2`}>
+        <div className={`text-sm sm:text-base lg:text-lg font-bold ${estadoActual.textColor} mb-0.5`}>
           {dia}
         </div>
 
         {/* Comentarios */}
-        <div className="space-y-2 text-sm">
+        <div className="space-y-0.5 text-xs">
           {/* Fecha de reprogramación */}
           {clase.fechaReprogramada && (
             <div className={`${estadoActual.textColor} opacity-80`}>
-              <p className="font-medium">Reprogramada para:</p>
               <p className="text-xs">
-                {new Date(clase.fechaReprogramada).toLocaleDateString('es-ES', {
-                  day: 'numeric',
-                  month: 'long'
-                })}
+                {new Date(clase.fechaReprogramada).getDate()}/{new Date(clase.fechaReprogramada).getMonth() + 1}
               </p>
             </div>
           )}
           
-          {/* Notas adicionales */}
-          {clase.notas && (
+          {/* Notas adicionales - Solo mostrar si hay espacio */}
+          {clase.notas && !clase.fechaReprogramada && (
             <div className={`${estadoActual.textColor} opacity-80`}>
-              <p className="text-xs leading-relaxed italic">
-                "{clase.notas}"
+              <p className="text-xs leading-tight italic line-clamp-1">
+                "{clase.notas.slice(0, 20)}..."
               </p>
             </div>
           )}
@@ -234,11 +235,11 @@ const ClaseCard = ({ clase }) => {
       </div>
 
       {/* Footer: Estado */}
-      <div className={`${estadoActual.footerColor} px-4 py-3 text-center border-t ${estadoActual.borderColor}`}>
-        <div className="flex items-center justify-center space-x-2">
-          <span className="text-lg">{estadoActual.icon}</span>
-          <span className={`text-sm font-semibold ${estadoActual.textColor}`}>
-            {estadoActual.label}
+      <div className={`${estadoActual.footerColor} px-1 py-0.5 text-center border-t ${estadoActual.borderColor} mt-auto`}>
+        <div className="flex items-center justify-center space-x-0.5">
+          <span className="text-xs">{estadoActual.icon}</span>
+          <span className={`text-xs font-medium ${estadoActual.textColor}`}>
+            {estadoActual.label.slice(0, 8)}
           </span>
         </div>
       </div>
@@ -327,46 +328,13 @@ const MisClases = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">
+    <div className="max-w-7xl mx-auto p-3 sm:p-6">
+      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">
         Mis Clases
       </h1>
 
-      {/* Sección de Resúmenes de Clases */}
-      <div className="mb-12">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">📚 Resúmenes de Clases</h2>
-        
-        {loadingResumenes ? (
-          <LoadingSpinner 
-            title="Cargando resúmenes..." 
-            subtitle="Obteniendo tus resúmenes de clase"
-          />
-        ) : resumenes.length > 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 max-w-none">
-              {resumenes.map((resumen) => (
-                <div key={resumen._id} className="max-w-sm">
-                  <ResumenCard resumen={resumen} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No hay resúmenes de clases
-            </h3>
-            <p className="text-gray-600">
-              Los resúmenes de tus clases aparecerán aquí una vez que el profesor los complete.
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* Sección de Todas las Clases */}
       <div className="mb-12">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">📖 Mis Clases</h2>
         
         {loadingClases ? (
           <LoadingSpinner 
@@ -377,12 +345,12 @@ const MisClases = () => {
           <div className="space-y-6">
             {/* Clases del último pago */}
             {clases.ultimoPago.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+              <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-6">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
                   <span className="w-3 h-3 bg-green-500 rounded-full mr-3"></span>
                   Clases del último pago ({clases.ultimoPago.length})
                 </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9 gap-1.5 sm:gap-2">
                   {clases.ultimoPago.map((clase) => (
                     <ClaseCard
                       key={clase._id}
@@ -395,15 +363,17 @@ const MisClases = () => {
 
             {/* Historial de clases */}
             {clases.historial.length > 0 && (
-              <details className="bg-white rounded-lg border border-gray-200">
-                <summary className="p-6 cursor-pointer hover:bg-gray-50 rounded-t-lg">
-                  <span className="text-lg font-semibold text-gray-900 flex items-center">
-                    <span className="w-3 h-3 bg-gray-400 rounded-full mr-3"></span>
+              <details className="bg-white rounded-lg border border-gray-200 [&[open]>summary>span>svg]:rotate-90">
+                <summary className="p-3 sm:p-6 cursor-pointer hover:bg-gray-50 rounded-t-lg list-none">
+                  <span className="text-base sm:text-lg font-semibold text-gray-900 flex items-center">
+                    <svg className="w-4 h-4 mr-3 transition-transform duration-200" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                    </svg>
                     Historial de clases ({clases.historial.length})
                   </span>
                 </summary>
-                <div className="px-6 pb-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+                <div className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9 gap-1.5 sm:gap-2">
                     {clases.historial.map((clase) => (
                       <ClaseCard
                         key={clase._id}
@@ -423,6 +393,41 @@ const MisClases = () => {
             </h3>
             <p className="text-gray-600">
               Tus próximas clases aparecerán aquí una vez que sean programadas.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Sección de Resúmenes de Clases */}
+      <div className="mb-12">
+        
+        {loadingResumenes ? (
+          <LoadingSpinner 
+            title="Cargando resúmenes..." 
+            subtitle="Obteniendo tus resúmenes de clase"
+          />
+        ) : resumenes.length > 0 ? (
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 flex items-center">
+              <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
+              Resúmenes de clases ({resumenes.length})
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 max-w-none">
+              {resumenes.map((resumen) => (
+                <div key={resumen._id} className="max-w-sm">
+                  <ResumenCard resumen={resumen} usuario={usuario} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="text-4xl mb-4">📚</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              No hay resúmenes de clases
+            </h3>
+            <p className="text-gray-600">
+              Los resúmenes de tus clases aparecerán aquí una vez que el profesor los complete.
             </p>
           </div>
         )}

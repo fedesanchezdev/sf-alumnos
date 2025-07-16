@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
   const { isAdmin } = useAuth();
   const location = useLocation();
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const isActive = (path) => {
     return location.pathname === path;
@@ -73,7 +74,7 @@ const Sidebar = () => {
       allowedFor: 'admin'
     }
   ] : [
-    // Orden para usuarios normales: Mis clases primero
+    // Orden para usuarios normales: Mis clases, Partituras, Mis pagos, Cambiar contraseña
     {
       name: 'Mis Clases',
       path: '/mis-clases',
@@ -85,21 +86,21 @@ const Sidebar = () => {
       allowedFor: 'user'
     },
     {
-      name: 'Mis Pagos',
-      path: '/mis-pagos',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-      allowedFor: 'user'
-    },
-    {
       name: 'Partituras',
       path: '/partituras',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zm12-3c0 1.105-.895 2-2 2s-2-.895-2-2 .895-2 2-2 2 .895 2 2zM9 10l12-3" />
+        </svg>
+      ),
+      allowedFor: 'user'
+    },
+    {
+      name: 'Mis Pagos',
+      path: '/mis-pagos',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       ),
       allowedFor: 'user'
@@ -117,40 +118,122 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="fixed left-0 top-16 h-full w-64 bg-slate-50 shadow-lg border-r border-slate-200 z-40">
-      <div className="flex flex-col h-full">
-        {/* Menú principal */}
-        <nav className="flex-1 pt-6 pb-4 overflow-y-auto">
-          <div className="px-3">
-            <ul className="space-y-1">
-              {menuItems.map((item) => (
-                <li key={item.path}>
+    <>
+      {/* Sidebar para dispositivos medianos y grandes (md+) */}
+      <aside className="md:block hidden fixed left-0 top-16 h-full w-64 bg-slate-50 shadow-lg border-r border-slate-200 z-40">
+        <div className="flex flex-col h-full">
+          {/* Menú principal */}
+          <nav className="flex-1 pt-6 pb-4 overflow-y-auto">
+            <div className="px-3">
+              <ul className="space-y-1">
+                {menuItems.map((item) => (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                        isActive(item.path)
+                          ? 'bg-indigo-200 text-indigo-900 border-r-2 border-indigo-600'
+                          : 'text-slate-700 hover:bg-slate-200 hover:text-slate-900'
+                      }`}
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      {item.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </nav>
+
+          {/* Footer del sidebar */}
+          <div className="px-3 py-4 border-t border-slate-200">
+            <div className="text-xs text-slate-500 text-center">
+              <p>Sistema de Gestión</p>
+              <p>Clases de Violoncello</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Menú móvil en la parte inferior para dispositivos pequeños */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50">
+        <div className="flex justify-around items-center py-2">
+          {/* Mostrar los primeros 4 elementos principales */}
+          {menuItems.slice(0, 4).map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs font-medium transition-colors duration-200 ${
+                isActive(item.path)
+                  ? 'text-indigo-600'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <div className={`${isActive(item.path) ? 'text-indigo-600' : 'text-slate-500'}`}>
+                {item.icon}
+              </div>
+              <span className="mt-1 text-[10px] leading-tight text-center break-words max-w-full">
+                {item.name.length > 8 ? 
+                  item.name.split(' ').map(word => word.length > 4 ? word.substring(0, 4) : word).join(' ') : 
+                  item.name
+                }
+              </span>
+            </Link>
+          ))}
+          
+          {/* Botón "Más" si hay más de 4 elementos */}
+          {menuItems.length > 4 && (
+            <button
+              onClick={() => setShowMobileMenu(true)}
+              className="flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              <span className="mt-1 text-[10px]">Más</span>
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {/* Modal para elementos adicionales del menú móvil */}
+      {showMobileMenu && (
+        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-60 flex items-end">
+          <div className="bg-white w-full rounded-t-lg shadow-lg max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center p-4 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-900">Menú</h3>
+              <button
+                onClick={() => setShowMobileMenu(false)}
+                className="text-slate-500 hover:text-slate-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="space-y-2">
+                {menuItems.map((item) => (
                   <Link
+                    key={item.path}
                     to={item.path}
-                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
+                    onClick={() => setShowMobileMenu(false)}
+                    className={`flex items-center px-3 py-3 text-sm font-medium rounded-md transition-colors duration-200 ${
                       isActive(item.path)
-                        ? 'bg-indigo-200 text-indigo-900 border-r-2 border-indigo-600'
-                        : 'text-slate-700 hover:bg-slate-200 hover:text-slate-900'
+                        ? 'bg-indigo-100 text-indigo-900'
+                        : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
                     <span className="mr-3">{item.icon}</span>
                     {item.name}
                   </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </nav>
-
-        {/* Footer del sidebar */}
-        <div className="px-3 py-4 border-t border-slate-200">
-          <div className="text-xs text-slate-500 text-center">
-            <p>Sistema de Gestión</p>
-            <p>Clases de Violoncello</p>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      )}
+    </>
   );
 };
 

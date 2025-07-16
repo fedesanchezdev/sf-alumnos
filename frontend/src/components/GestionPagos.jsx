@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { pagosService, usuariosService, clasesService } from '../services/api';
 import { formatearFechaCorta } from '../utils/fechas';
 import { agruparPagosPorMes } from '../utils/pagosFechas';
-import { codificarParaWhatsApp } from '../utils/whatsapp';
+import { codificarParaWhatsApp, enviarWhatsApp } from '../utils/whatsapp';
 import LoadingSpinner from './LoadingSpinner';
 
 // Componente para renderizar una card de pago
@@ -82,10 +82,12 @@ const PagoCard = ({ pago, onEdit, onEliminar }) => {
       mensaje += `*Descargar factura*\n📘📘📘📘📘📘📘📘📘\n${pago.linkFactura}`;
     }
     
-    // Usar la misma codificación y URL que los resúmenes de clase
-    const mensajeCodificado = codificarParaWhatsApp(mensaje);
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${mensajeCodificado}`;
-    window.open(whatsappUrl, '_blank');
+    // Usar la función actualizada de WhatsApp con teléfono del usuario
+    if (pago.usuario?.telefono) {
+      enviarWhatsApp(mensaje, pago.usuario.telefono);
+    } else {
+      enviarWhatsApp(mensaje);
+    }
   };
 
   return (
@@ -104,15 +106,6 @@ const PagoCard = ({ pago, onEdit, onEliminar }) => {
           >
             📱
           </button>
-          {pago.linkFactura && (
-            <button
-              onClick={descargarFactura}
-              className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-              title="Descargar factura"
-            >
-              📄
-            </button>
-          )}
           <button
             onClick={() => onEdit(pago)}
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"

@@ -15,7 +15,7 @@ export const obtenerResumenPorClase = async (req, res) => {
       activo: true 
     })
       .populate('clase', 'fecha estado notas')
-      .populate('usuario', 'nombre apellido')
+      .populate('usuario', 'nombre apellido telefono')
       .populate('obrasEstudiadas.partitura', 'compositor obra')
       .lean();
 
@@ -54,6 +54,7 @@ export const obtenerResumenesPorUsuario = async (req, res) => {
       activo: true 
     })
       .populate('clase', 'fecha estado notas')
+      .populate('usuario', 'nombre apellido telefono')
       .populate('obrasEstudiadas.partitura', 'compositor obra')
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -169,7 +170,7 @@ export const crearOActualizarResumen = async (req, res) => {
     // Retornar el resumen completo con datos poblados
     const resumenCompleto = await ResumenClase.findById(resumen._id)
       .populate('clase', 'fecha estado notas')
-      .populate('usuario', 'nombre apellido')
+      .populate('usuario', 'nombre apellido telefono')
       .populate('obrasEstudiadas.partitura', 'compositor obra')
       .lean();
 

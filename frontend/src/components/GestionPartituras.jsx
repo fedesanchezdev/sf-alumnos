@@ -217,11 +217,11 @@ const GestionPartituras = () => {
     };
     
     return (
-      <div className="bg-indigo-100 border border-indigo-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 h-full flex flex-col min-w-[380px] min-h-[130px] partitura-card transition-all duration-300 ease-in-out">
-        <div className="p-4 text-left flex-1 flex flex-col">
+      <div className="bg-indigo-100 border border-indigo-200 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-700 h-full flex flex-col w-full sm:min-w-[350px] lg:min-w-[380px] min-h-[130px] partitura-card transition-all duration-300 ease-in-out">
+        <div className="p-3 sm:p-4 text-left flex-1 flex flex-col">
           {/* Header con botón de favorito */}
-          <div className="flex justify-between items-start mb-3">
-            <h5 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex-1 mr-2">
+          <div className="flex justify-between items-start mb-2 sm:mb-3">
+            <h5 className="text-lg sm:text-xl lg:text-2xl font-bold tracking-tight text-gray-900 dark:text-white flex-1 mr-2 break-words">
               {partitura.compositor}
             </h5>
             <button
@@ -233,12 +233,12 @@ const GestionPartituras = () => {
               }`}
               title={esFavorito ? 'Quitar de favoritos' : 'Agregar a favoritos'}
             >
-              <svg className="w-6 h-6" fill={esFavorito ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill={esFavorito ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
             </button>
           </div>
-          <p className="mb-3 text-lg font-semibold text-gray-700 dark:text-gray-400">
+          <p className="mb-2 sm:mb-3 text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-400 break-words">
             {partitura.obra}
           </p>
           
@@ -350,7 +350,7 @@ const GestionPartituras = () => {
   }
 
   return (
-    <div className="px-4 py-8">
+    <div className="px-4 sm:px-6 py-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="text-center mb-6">
@@ -442,7 +442,7 @@ const GestionPartituras = () => {
 
       {/* Grid de partituras */}
       {partiturasFiltradas.length > 0 ? (
-        <div ref={gridRef} className="grid grid-cols-[repeat(auto-fill,minmax(380px,380px))] gap-6 items-start justify-center">
+        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] lg:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] gap-4 sm:gap-6 items-start justify-center">
           {partiturasFiltradas.map((partitura) => (
             <PartituraCard key={partitura._id} partitura={partitura} />
           ))}

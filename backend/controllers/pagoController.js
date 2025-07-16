@@ -103,7 +103,7 @@ export const crearPago = async (req, res) => {
 
     // Obtener el pago completo con las clases
     const pagoCompleto = await Pago.findById(pago._id)
-      .populate('usuario', 'nombre apellido email')
+      .populate('usuario', 'nombre apellido email telefono')
       .lean();
 
     const clasesCreadas = await Clase.find({ pago: pago._id }).lean();
@@ -129,7 +129,7 @@ export const crearPago = async (req, res) => {
 export const obtenerPagos = async (req, res) => {
   try {
     const pagos = await Pago.find({ activo: true })
-      .populate('usuario', 'nombre apellido email')
+      .populate('usuario', 'nombre apellido email telefono')
       .sort({ fechaPago: -1 })
       .lean();
 
@@ -155,7 +155,7 @@ export const obtenerPagosPorUsuario = async (req, res) => {
       usuario: usuarioId,
       activo: true
     })
-      .populate('usuario', 'nombre apellido email')
+      .populate('usuario', 'nombre apellido email telefono')
       .sort({ fechaPago: -1 })
       .lean();
 
@@ -298,7 +298,7 @@ export const actualizarPago = async (req, res) => {
     }
 
     const pagoActualizado = await Pago.findById(id)
-      .populate('usuario', 'nombre apellido email')
+      .populate('usuario', 'nombre apellido email telefono')
       .lean();
 
     res.json({
@@ -388,7 +388,7 @@ export const agregarClasesIndividuales = async (req, res) => {
 
     // Obtener todas las clases del pago
     const todasLasClases = await Clase.find({ pago: id })
-      .populate('usuario', 'nombre apellido email')
+      .populate('usuario', 'nombre apellido email telefono')
       .sort({ fecha: 1 })
       .lean();
 

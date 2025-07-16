@@ -56,68 +56,70 @@ const PagoCard = ({ pago }) => {
   };
 
   return (
-    <div className="bg-white border-2 border-gray-200 rounded-lg p-6 shadow-md hover:shadow-lg transition-all duration-200">
+    <div className="bg-white border-2 border-gray-200 rounded-lg p-2.5 shadow-md hover:shadow-lg transition-all duration-200 w-full min-w-0 flex flex-col">
       {/* Header */}
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Pago del {formatearFechaNumericaCorta(pago.fechaCreacion || pago.createdAt)}
+      <div className="mb-2 flex-shrink-0">
+        <h3 className="text-xs font-semibold text-gray-900 mb-1 leading-tight">
+          Pago {formatearFechaNumericaCorta(pago.fechaCreacion || pago.createdAt)}
         </h3>
       </div>
 
       {/* Detalles del pago */}
-      <div className="space-y-3">
+      <div className="space-y-1 flex-grow">
         <div className="flex justify-between items-center">
-          <span className="text-gray-600">Monto:</span>
-          <span className="text-xl font-bold text-green-600">
+          <span className="text-xs text-gray-600">Monto:</span>
+          <span className="text-sm font-bold text-green-600">
             ${pago.monto?.toLocaleString()}
           </span>
         </div>
 
         {pago.periodo && (
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Período:</span>
-            <span className="font-medium">{pago.periodo}</span>
+            <span className="text-xs text-gray-600">Período:</span>
+            <span className="text-xs font-medium truncate ml-1">{pago.periodo}</span>
           </div>
         )}
 
         {pago.fechaVencimiento && (
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Vencimiento:</span>
-            <span className="font-medium">{formatearFechaCompacta(pago.fechaVencimiento)}</span>
+            <span className="text-xs text-gray-600">Vence:</span>
+            <span className="text-xs font-medium">{formatearFechaCompacta(pago.fechaVencimiento)}</span>
           </div>
         )}
 
         {pago.metodoPago && (
           <div className="flex justify-between items-center">
-            <span className="text-gray-600">Método:</span>
-            <span className="font-medium">{pago.metodoPago}</span>
+            <span className="text-xs text-gray-600">Método:</span>
+            <span className="text-xs font-medium truncate ml-1">{pago.metodoPago}</span>
           </div>
         )}
 
-        {/* Fechas de clases pagadas */}
+        {/* Fechas de clases pagadas - TODAS */}
         {pago.clases && pago.clases.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-md">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">
-              Clases incluidas ({pago.clases.length})
+          <div className="mt-2 p-1.5 bg-blue-50 rounded border">
+            <h4 className="text-xs font-medium text-gray-700 mb-1.5 text-center">
+              📚 Clases ({pago.clases.length})
             </h4>
             <div className="space-y-1">
               {pago.clases.map((clase, index) => (
-                <div key={index} className="flex justify-between items-center text-xs">
-                  <span className="text-gray-600">
-                    {formatearFechaAmericanaEspañol(clase.fecha)}
-                  </span>
-                  <span className={`px-2 py-1 rounded text-xs ${
-                    clase.estado === 'tomada' ? 'bg-green-100 text-green-700' :
-                    clase.estado === 'ausente' ? 'bg-red-100 text-red-700' :
-                    clase.estado === 'recuperada' ? 'bg-purple-100 text-purple-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {clase.estado === 'no_iniciada' ? 'Pendiente' : 
-                     clase.estado === 'tomada' ? 'Tomada' :
-                     clase.estado === 'ausente' ? 'Ausente' :
-                     clase.estado === 'recuperada' ? 'Recuperada' :
-                     clase.estado}
-                  </span>
+                <div key={index} className="flex flex-col gap-0.5 p-1 bg-white rounded text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600 font-medium">
+                      {formatearFechaAmericanaEspañol(clase.fecha)}
+                    </span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                      clase.estado === 'tomada' ? 'bg-green-100 text-green-700' :
+                      clase.estado === 'ausente' ? 'bg-red-100 text-red-700' :
+                      clase.estado === 'recuperada' ? 'bg-purple-100 text-purple-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {clase.estado === 'no_iniciada' ? 'Pendiente' : 
+                       clase.estado === 'tomada' ? 'Tomada' :
+                       clase.estado === 'ausente' ? 'Ausente' :
+                       clase.estado === 'recuperada' ? 'Recuperada' :
+                       clase.estado}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -125,8 +127,8 @@ const PagoCard = ({ pago }) => {
         )}
 
         {pago.notas && (
-          <div className="mt-3 p-3 bg-gray-50 rounded-md">
-            <p className="text-sm text-gray-700">
+          <div className="mt-2 p-1.5 bg-gray-50 rounded border">
+            <p className="text-xs text-gray-700">
               📝 {pago.notas}
             </p>
           </div>
@@ -134,7 +136,7 @@ const PagoCard = ({ pago }) => {
       </div>
 
       {/* Botón de factura */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
+      <div className="mt-2 pt-2 border-t border-gray-200 flex-shrink-0">
         {(() => {
           const urlFactura = pago.facturaUrl || pago.linkFactura;
           const tieneFactura = urlFactura && urlFactura !== 'undefined' && urlFactura !== '' && urlFactura !== 'null';
@@ -143,22 +145,22 @@ const PagoCard = ({ pago }) => {
             <button
               onClick={handleDescargarFactura}
               disabled={descargando}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-1 text-xs font-medium"
             >
               {descargando ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Descargando...
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                  Descargando
                 </>
               ) : (
                 <>
-                  Descargar Factura
+                  📄 Factura
                 </>
               )}
             </button>
           ) : (
-            <div className="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-md text-center">
-              Factura no disponible
+            <div className="w-full px-2 py-1 bg-gray-100 text-gray-500 rounded text-center text-xs">
+              Sin factura
             </div>
           );
         })()}
@@ -206,7 +208,7 @@ const MisPagos = () => {
           subtitle="Obteniendo tu historial de pagos"
         />
       ) : pagos.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 auto-rows-min">
           {pagos.map((pago) => (
             <PagoCard key={pago._id} pago={pago} />
           ))}

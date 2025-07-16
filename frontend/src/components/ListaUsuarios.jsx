@@ -155,6 +155,11 @@ const ListaUsuarios = () => {
                     </div>
                     <div className="text-sm text-gray-500">
                       {usuario.email}
+                      {usuario.telefono && (
+                        <span className="ml-3 text-green-600">
+                          📱 {usuario.telefono}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-gray-400">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

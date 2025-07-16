@@ -6,26 +6,48 @@
 /**
  * Codifica un mensaje para envío por WhatsApp
  * Maneja correctamente los emojis y caracteres especiales
+ * Mantiene emojis legibles, solo codifica caracteres problemáticos
  * @param {string} texto - El texto a codificar
  * @returns {string} - Texto codificado para URL de WhatsApp
  */
 export const codificarParaWhatsApp = (texto) => {
-  // Usar encodeURIComponent para codificación básica
-  let textoCodificado = encodeURIComponent(texto);
-  
-  // Preservar asteriscos para formato bold de WhatsApp
-  textoCodificado = textoCodificado.replace(/%2A/g, '*');
-  
-  return textoCodificado;
+  // Codificar solo los caracteres problemáticos para URLs, manteniendo emojis
+  return texto
+    .replace(/\n/g, '%0A')      // Saltos de línea
+    .replace(/ /g, '%20')       // Espacios
+    .replace(/&/g, '%26')       // Ampersand
+    .replace(/\+/g, '%2B')      // Signo más
+    .replace(/#/g, '%23')       // Hash
+    .replace(/\?/g, '%3F')      // Signo de interrogación
+    .replace(/=/g, '%3D');      // Signo igual
 };
 
 /**
  * Abre WhatsApp con un mensaje pre-escrito
  * @param {string} mensaje - El mensaje a enviar
+ * @param {string} telefono - Número de teléfono (opcional)
  */
-export const enviarWhatsApp = (mensaje) => {
+export const enviarWhatsApp = (mensaje, telefono = null) => {
   const mensajeCodificado = codificarParaWhatsApp(mensaje);
-  const whatsappUrl = `https://api.whatsapp.com/send?text=${mensajeCodificado}`;
+  
+  let whatsappUrl;
+  if (telefono && telefono.trim() !== '') {
+    // Limpiar el número de teléfono (quitar espacios, guiones, paréntesis, etc.)
+    let telefonoLimpio = telefono.replace(/[\s\-\(\)+]/g, '');
+    
+    // Si no empieza con código de país, agregar +54 (Argentina)
+    if (!telefonoLimpio.startsWith('54') && !telefonoLimpio.startsWith('+')) {
+      telefonoLimpio = '54' + telefonoLimpio;
+    }
+    
+    // Remover el + si existe al inicio
+    telefonoLimpio = telefonoLimpio.replace(/^\+/, '');
+    
+    whatsappUrl = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${mensajeCodificado}`;
+  } else {
+    whatsappUrl = `https://api.whatsapp.com/send?text=${mensajeCodificado}`;
+  }
+  
   window.open(whatsappUrl, '_blank');
 };
 

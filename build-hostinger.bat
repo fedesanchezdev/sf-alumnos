@@ -1,5 +1,8 @@
 @echo off
-echo 🏠 Preparando build para Hostinger (federicosanchez.com.ar/alumnos)...
+echo 🏠 Preparando build para Hostiecho 🌐 URLs:
+echo Página principal: https://federicosanchez.com.ar
+echo App de alumnos:   https://federicosanchez.com.ar/alumnos
+echo Backend:          https://sf-alumnos-backend-new.onrender.com/api (federicosanchez.com.ar/alumnos)...
 
 rem Crear directorio de build si no existe
 if not exist "build-hostinger" mkdir build-hostinger

@@ -9,7 +9,6 @@ import GestionPagos from './components/GestionPagos';
 import GestionClases from './components/GestionClases';
 import GestionPartituras from './components/GestionPartituras';
 import AdminPartituras from './components/AdminPartituras';
-import ResumenClasesUsuario from './components/ResumenClasesUsuario';
 import ResumenClasePage from './components/ResumenClasePage';
 import MisClases from './components/MisClases';
 import MisPagos from './components/MisPagos';
@@ -47,8 +46,12 @@ function AppContent() {
         </>
       )}
       
-      {/* Contenedor principal con margen para sidebar solo si no es standalone */}
-      <div className={`${isAuthenticated() && !isStandaloneResumen ? 'ml-64 pt-24' : ''}`}>
+      {/* Contenedor principal con márgenes responsivos */}
+      <div className={`${
+        isAuthenticated() && !isStandaloneResumen 
+          ? 'md:ml-64 pt-16 md:pt-24 pb-20 md:pb-0' 
+          : ''
+      }`}>
         <Routes>        {/* Ruta de resumen de clase - DEBE ir antes que otras rutas admin */}
         <Route 
           path="/admin/resumen-clase/:claseId" 
@@ -149,15 +152,6 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <MisPagos />
-            </ProtectedRoute>
-          } 
-        />
-
-        <Route 
-          path="/resumen-clases" 
-          element={
-            <ProtectedRoute>
-              <ResumenClasesUsuario />
             </ProtectedRoute>
           } 
         />

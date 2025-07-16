@@ -7,6 +7,7 @@ const FormularioUsuario = ({ usuario, onSubmit, onCancel }) => {
     nombre: '',
     apellido: '',
     email: '',
+    telefono: '',
     password: '',
     rol: 'usuario'
   });
@@ -19,6 +20,7 @@ const FormularioUsuario = ({ usuario, onSubmit, onCancel }) => {
         nombre: usuario.nombre || '',
         apellido: usuario.apellido || '',
         email: usuario.email || '',
+        telefono: usuario.telefono || '',
         password: '',
         rol: usuario.rol || 'usuario'
       });
@@ -107,6 +109,23 @@ const FormularioUsuario = ({ usuario, onSubmit, onCancel }) => {
                 value={formData.email}
                 onChange={handleChange}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Teléfono (WhatsApp)
+              </label>
+              <input
+                type="tel"
+                name="telefono"
+                placeholder="Ej: +54911234567 o 15234567"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                value={formData.telefono}
+                onChange={handleChange}
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Incluye código de país para WhatsApp automático
+              </p>
             </div>
 
             <div>
