@@ -48,7 +48,7 @@ export const obtenerUsuarioPorId = async (req, res) => {
 // @access  Private (Admin)
 export const crearUsuario = async (req, res) => {
   try {
-    const { nombre, apellido, email, password, rol } = req.body;
+    const { nombre, apellido, email, telefono, password, rol } = req.body;
 
     // Validar campos requeridos
     if (!nombre || !apellido || !email || !password) {
@@ -70,6 +70,7 @@ export const crearUsuario = async (req, res) => {
       nombre,
       apellido,
       email,
+      telefono,
       password,
       rol: rol || 'usuario'
     });
@@ -105,7 +106,7 @@ export const crearUsuario = async (req, res) => {
 // @access  Private (Admin o mismo usuario)
 export const actualizarUsuario = async (req, res) => {
   try {
-    const { nombre, apellido, email, rol, password } = req.body;
+    const { nombre, apellido, email, telefono, rol, password } = req.body;
     const { id } = req.params;
 
     const usuario = await Usuario.findById(id);
@@ -129,6 +130,7 @@ export const actualizarUsuario = async (req, res) => {
     if (nombre) usuario.nombre = nombre;
     if (apellido) usuario.apellido = apellido;
     if (email) usuario.email = email;
+    if (telefono !== undefined) usuario.telefono = telefono; // Permitir vacío
     
     // Solo admin puede cambiar roles
     if (rol && req.usuario.rol === 'administrador') {
