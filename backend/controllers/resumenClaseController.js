@@ -16,7 +16,12 @@ export const obtenerResumenPorClase = async (req, res) => {
     })
       .populate('clase', 'fecha estado notas')
       .populate('usuario', 'nombre apellido telefono')
-      .populate('obrasEstudiadas.partitura', 'compositor obra')
+      .populate({
+        path: 'obrasEstudiadas.partitura',
+        select: 'compositor obra',
+        // Populate opcional - no fallar si partitura es null (obras manuales)
+        options: { strictPopulate: false }
+      })
       .lean();
 
     if (!resumen) {
@@ -55,7 +60,12 @@ export const obtenerResumenesPorUsuario = async (req, res) => {
     })
       .populate('clase', 'fecha estado notas')
       .populate('usuario', 'nombre apellido telefono')
-      .populate('obrasEstudiadas.partitura', 'compositor obra')
+      .populate({
+        path: 'obrasEstudiadas.partitura',
+        select: 'compositor obra',
+        // Populate opcional - no fallar si partitura es null (obras manuales)
+        options: { strictPopulate: false }
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limite))
@@ -123,27 +133,37 @@ export const crearOActualizarResumen = async (req, res) => {
       });
     }
 
-    // Verificar que las partituras existen
-    const partituraIds = obrasEstudiadas.map(obra => obra.partitura);
-    console.log('IDs de partituras a verificar:', partituraIds);
-    
-    const partidasExistentes = await Partitura.find({ 
-      _id: { $in: partituraIds }
-    });
+    // Separar obras de la biblioteca (con partitura válida) de obras manuales
+    const obrasConPartitura = obrasEstudiadas.filter(obra => obra.partitura && obra.partitura !== null && obra.partitura !== '');
+    const obrasManuales = obrasEstudiadas.filter(obra => !obra.partitura || obra.partitura === null || obra.partitura === '' || obra.esManual);
 
-    console.log('Partituras encontradas:', partidasExistentes.length, 'de', partituraIds.length);
-    console.log('Partituras encontradas:', partidasExistentes.map(p => ({ id: p._id, compositor: p.compositor, obra: p.obra })));
+    console.log('Obras con partitura (biblioteca):', obrasConPartitura.length);
+    console.log('Obras manuales:', obrasManuales.length);
+    console.log('Total obras:', obrasEstudiadas.length);
 
-    if (partidasExistentes.length !== partituraIds.length) {
-      console.log('Error: no se encontraron todas las partituras');
-      const partiturasNoEncontradas = partituraIds.filter(id => 
-        !partidasExistentes.some(p => p._id.toString() === id.toString())
-      );
-      console.log('Partituras no encontradas:', partiturasNoEncontradas);
-      return res.status(400).json({
-        message: 'Una o más partituras seleccionadas no existen',
-        partiturasNoEncontradas
+    // Verificar que las partituras de la biblioteca existen
+    if (obrasConPartitura.length > 0) {
+      const partituraIds = obrasConPartitura.map(obra => obra.partitura).filter(id => id); // Filtrar IDs válidos
+      const partituraIdsUnicos = [...new Set(partituraIds)]; // Remover duplicados
+      console.log('IDs de partituras a verificar (únicos):', partituraIdsUnicos);
+      
+      const partidasExistentes = await Partitura.find({ 
+        _id: { $in: partituraIdsUnicos }
       });
+
+      console.log('Partituras encontradas:', partidasExistentes.length, 'de', partituraIdsUnicos.length);
+
+      if (partidasExistentes.length !== partituraIdsUnicos.length) {
+        console.log('Error: no se encontraron todas las partituras');
+        const partiturasNoEncontradas = partituraIdsUnicos.filter(id => 
+          id && !partidasExistentes.some(p => p._id.toString() === id.toString())
+        );
+        console.log('Partituras no encontradas:', partiturasNoEncontradas);
+        return res.status(400).json({
+          message: 'Una o más partituras seleccionadas no existen',
+          partiturasNoEncontradas
+        });
+      }
     }
 
     // Buscar resumen existente o crear uno nuevo
@@ -171,7 +191,12 @@ export const crearOActualizarResumen = async (req, res) => {
     const resumenCompleto = await ResumenClase.findById(resumen._id)
       .populate('clase', 'fecha estado notas')
       .populate('usuario', 'nombre apellido telefono')
-      .populate('obrasEstudiadas.partitura', 'compositor obra')
+      .populate({
+        path: 'obrasEstudiadas.partitura',
+        select: 'compositor obra',
+        // Populate opcional - no fallar si partitura es null (obras manuales)
+        options: { strictPopulate: false }
+      })
       .lean();
 
     res.status(resumen.isNew ? 201 : 200).json({

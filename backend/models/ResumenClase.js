@@ -4,7 +4,7 @@ const obraEstudiadaSchema = new mongoose.Schema({
   partitura: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Partitura',
-    required: true
+    required: false // Ya no es requerido para permitir obras manuales
   },
   compositor: {
     type: String,
@@ -21,6 +21,10 @@ const obraEstudiadaSchema = new mongoose.Schema({
   comentarios: {
     type: String,
     default: ''
+  },
+  esManual: {
+    type: Boolean,
+    default: false
   }
 });
 
