@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { resumenClaseService, clasesService } from '../services/api';
 import { formatearFecha, formatearFechaCorta, formatearFechaAmericanaEspañol } from '../utils/fechas';
 import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
+import { logger } from '../utils/logger';
 
 const LoadingSpinner = ({ title, subtitle, size = "normal" }) => {
   const spinnerSize = size === "small" ? "h-6 w-6" : "h-8 w-8";
@@ -21,7 +22,7 @@ const ResumenCard = ({ resumen, usuario }) => {
 
   // Validar que resumen y clase existan
   if (!resumen || !resumen.clase) {
-    console.warn('ResumenCard: resumen o clase es null/undefined', resumen);
+    logger.warn('ResumenCard: resumen o clase es null/undefined', resumen);
     return (
       <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 shadow-md">
         <p className="text-red-600">⚠️ Error: Datos de resumen incompletos</p>
@@ -48,7 +49,7 @@ const ResumenCard = ({ resumen, usuario }) => {
       }
       
     } catch (error) {
-      console.error('Error al enviar por WhatsApp:', error);
+      logger.error('Error al enviar por WhatsApp:', error);
       alert('❌ Error al procesar el envío por WhatsApp');
     } finally {
       setEnviando(false);
@@ -277,7 +278,7 @@ const MisClases = () => {
       );
       setResumenes(resumenesOrdenados);
     } catch (error) {
-      console.error('Error al cargar resúmenes:', error);
+      logger.error('Error al cargar resúmenes:', error);
       setResumenes([]);
     } finally {
       setLoadingResumenes(false);
@@ -304,7 +305,7 @@ const MisClases = () => {
         historial: ordenarClases(clasesData.historialClases || [])
       });
     } catch (error) {
-      console.error('Error al cargar clases:', error);
+      logger.error('Error al cargar clases:', error);
       setClases({ ultimoPago: [], historial: [] });
     } finally {
       setLoadingClases(false);

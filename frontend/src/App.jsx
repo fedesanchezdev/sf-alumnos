@@ -12,6 +12,7 @@ import AdminPartituras from './components/AdminPartituras';
 import ResumenClasePage from './components/ResumenClasePage';
 import MisClases from './components/MisClases';
 import MisPagos from './components/MisPagos';
+import LoggingTest from './components/LoggingTest';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -154,6 +155,11 @@ function AppContent() {
               <MisPagos />
             </ProtectedRoute>
           } 
+        />
+
+        <Route 
+          path="/test-logging" 
+          element={<LoggingTest />} 
         />
         
         <Route 

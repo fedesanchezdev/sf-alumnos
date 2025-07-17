@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { pagosService } from '../services/api';
 import { formatearFecha, formatearFechaCompacta, formatearFechaMuyCorta, formatearFechaNumericaCorta, formatearFechaAmericanaEspañol } from '../utils/fechas';
+import { logger } from '../utils/logger';
 
 const LoadingSpinner = ({ title, subtitle, size = "normal" }) => {
   const spinnerSize = size === "small" ? "h-6 w-6" : "h-8 w-8";
@@ -189,7 +190,7 @@ const MisPagos = () => {
         .sort((a, b) => new Date(b.fechaCreacion || b.createdAt) - new Date(a.fechaCreacion || a.createdAt));
       setPagos(pagosOrdenados);
     } catch (error) {
-      console.error('Error al cargar pagos:', error);
+      logger.error('Error al cargar pagos:', error);
       setPagos([]);
     } finally {
       setLoading(false);

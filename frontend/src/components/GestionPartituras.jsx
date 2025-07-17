@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { partiturasService, usuariosService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
+import { logger } from '../utils/logger';
 
 const GestionPartituras = () => {
   const { usuario } = useAuth();
@@ -125,7 +126,7 @@ const GestionPartituras = () => {
 
   const toggleFavorito = async (partituraId) => {
     if (!usuario?._id) {
-      console.error('Usuario no autenticado');
+      logger.error('Usuario no autenticado');
       return;
     }
 
@@ -146,8 +147,8 @@ const GestionPartituras = () => {
       await usuariosService.alternarFavorito(usuario._id, partituraId);
       // La UI ya se actualizó, no necesitamos hacer nada más aquí
     } catch (error) {
-      console.error('Error al alternar favorito:', error);
-      console.error('Detalles del error:', {
+      logger.error('Error al alternar favorito:', error);
+      logger.error('Detalles del error:', {
         status: error.response?.status,
         message: error.response?.data?.message,
         url: error.config?.url
@@ -178,8 +179,8 @@ const GestionPartituras = () => {
       const favoritosIds = response.data.map(partitura => partitura._id || partitura);
       setFavoritos(new Set(favoritosIds));
     } catch (error) {
-      console.error('Error al cargar favoritos:', error);
-      console.error('Detalles del error:', {
+      logger.error('Error al cargar favoritos:', error);
+      logger.error('Detalles del error:', {
         status: error.response?.status,
         message: error.response?.data?.message,
         url: error.config?.url
@@ -191,7 +192,7 @@ const GestionPartituras = () => {
           setFavoritos(new Set(JSON.parse(favoritosGuardados)));
         }
       } catch (localError) {
-        console.error('Error al cargar favoritos desde localStorage:', localError);
+        logger.error('Error al cargar favoritos desde localStorage:', localError);
       }
     }
   };

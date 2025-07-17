@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { usuariosService } from '../services/api';
+import { authService } from '../services/api';
+import { logger } from '../utils/logger';
 
 const AuthContext = createContext();
 
@@ -29,11 +30,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      console.log('Intentando login con:', { email, password: '***' });
-      console.log('API URL:', import.meta.env.VITE_API_URL);
+      logger.sensitive('Intentando login con:', { email, password: '***' });
+      logger.debug('API URL:', import.meta.env.VITE_API_URL);
       
       const response = await usuariosService.login({ email, password });
-      console.log('Respuesta del servidor:', response);
+      logger.sensitive('Respuesta del servidor:', response);
       
       const { token, usuario: userData } = response.data;
       
@@ -41,11 +42,11 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('usuario', JSON.stringify(userData));
       setUsuario(userData);
       
-      console.log('Usuario logueado:', userData);
+      logger.sensitive('Usuario logueado:', userData);
       return { success: true };
     } catch (error) {
-      console.error('Error en login:', error);
-      console.error('Detalles del error:', error.response?.data);
+      logger.error('Error en login:', error);
+      logger.error('Detalles del error:', error.response?.data);
       return { 
         success: false, 
         error: error.response?.data?.message || 'Error al iniciar sesión' 

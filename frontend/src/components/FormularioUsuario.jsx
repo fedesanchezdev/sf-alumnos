@@ -118,13 +118,13 @@ const FormularioUsuario = ({ usuario, onSubmit, onCancel }) => {
               <input
                 type="tel"
                 name="telefono"
-                placeholder="Ej: +54911234567 o 15234567"
+                placeholder="Ej: +54911234567, +1234567890, 15234567"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 value={formData.telefono}
                 onChange={handleChange}
               />
               <p className="mt-1 text-xs text-gray-500">
-                Incluye código de país para WhatsApp automático
+                Incluye código de país completo (ej: +54 para Argentina, +1 para USA)
               </p>
             </div>
 

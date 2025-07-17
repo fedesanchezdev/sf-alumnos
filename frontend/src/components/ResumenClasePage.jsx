@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ResumenClase from './ResumenClase';
+import { logger } from '../utils/logger';
 import { formatearFechaCorta } from '../utils/fechas';
 
 const ResumenClasePage = () => {
@@ -13,36 +14,38 @@ const ResumenClasePage = () => {
   const fecha = searchParams.get('fecha');
   const isNewTab = searchParams.get('newTab') === 'true';
 
-  console.log('ResumenClasePage - Parámetros recibidos:');
-  console.log('claseId:', claseId);
-  console.log('usuarioId:', usuarioId);
-  console.log('fecha:', fecha);
-  console.log('isNewTab:', isNewTab);
-  console.log('usuario autenticado:', usuario);
-  console.log('URL completa:', window.location.href);
-  console.log('pathname:', window.location.pathname);
-  console.log('search:', window.location.search);
-  console.log('Componente ResumenClasePage renderizándose correctamente');
+  logger.debug('ResumenClasePage - Parámetros recibidos', {
+    claseId,
+    usuarioId,
+    fecha,
+    isNewTab,
+    usuario,
+    url: window.location.href,
+    pathname: window.location.pathname,
+    search: window.location.search
+  });
+  logger.dev('Componente ResumenClasePage renderizándose correctamente');
 
   const [saved, setSaved] = useState(false);
 
   // Agregar efecto para debugging
   useEffect(() => {
-    console.log('ResumenClasePage useEffect - verificando parámetros');
-    console.log('Todos los parámetros necesarios presentes:', !!claseId && !!usuarioId);
-    if (!claseId) console.error('claseId faltante');
-    if (!usuarioId) console.error('usuarioId faltante');
-    if (!usuario) console.error('usuario no autenticado');
+    logger.dev('ResumenClasePage useEffect - verificando parámetros');
+    logger.dev('Todos los parámetros necesarios presentes:', !!claseId && !!usuarioId);
+    if (!claseId) logger.error('claseId faltante');
+    if (!usuarioId) logger.error('usuarioId faltante');
+    if (!usuario) logger.error('usuario no autenticado');
   }, [claseId, usuarioId, usuario]);
 
   // Verificar que el usuario sea admin
-  console.log('ResumenClasePage - Verificación de permisos:');
-  console.log('Usuario completo:', usuario);
-  console.log('Rol del usuario:', usuario?.rol);
-  console.log('isAdmin() result:', isAdmin());
-  
+  logger.debug('ResumenClasePage - Verificación de permisos', {
+    usuario,
+    rol: usuario?.rol,
+    isAdmin: isAdmin()
+  });
+
   if (!usuario) {
-    console.log('ResumenClasePage - Usuario no cargado aún');
+    logger.dev('ResumenClasePage - Usuario no cargado aún');
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md">
@@ -55,7 +58,7 @@ const ResumenClasePage = () => {
   }
   
   if (!isAdmin()) {
-    console.log('ResumenClasePage - Usuario no autorizado. Rol actual:', usuario.rol);
+    logger.warn('ResumenClasePage - Usuario no autorizado. Rol actual:', usuario.rol);
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-md">

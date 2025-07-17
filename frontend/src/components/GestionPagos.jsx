@@ -4,6 +4,7 @@ import { formatearFechaCorta } from '../utils/fechas';
 import { agruparPagosPorMes } from '../utils/pagosFechas';
 import { codificarParaWhatsApp, enviarWhatsApp } from '../utils/whatsapp';
 import LoadingSpinner from './LoadingSpinner';
+import { logger } from '../utils/logger';
 
 // Componente para renderizar una card de pago
 const PagoCard = ({ pago, onEdit, onEliminar }) => {
@@ -54,7 +55,7 @@ const PagoCard = ({ pago, onEdit, onEliminar }) => {
       link.click();
       document.body.removeChild(link);
     } catch (error) {
-      console.error('Error al descargar factura:', error);
+      logger.error('Error al descargar factura:', error);
       // Fallback: abrir en nueva pestaña
       window.open(pago.linkFactura, '_blank');
     }
@@ -218,7 +219,7 @@ const GestionPagos = () => {
               clasesDetalle: clasesDelPago // Agregar el detalle completo de las clases
             };
           } catch (error) {
-            console.error('Error al obtener clases para pago:', pago._id);
+            logger.error('Error al obtener clases para pago:', pago._id);
             // Fallback: intentar con el método anterior si el nuevo endpoint falla
             try {
               const clasesResponse = await clasesService.obtenerPorUsuario(pago.usuario._id);
@@ -233,7 +234,7 @@ const GestionPagos = () => {
                 clasesDetalle: clasesDelPago // Agregar el detalle completo de las clases
               };
             } catch (fallbackError) {
-              console.error('Error en fallback para pago:', pago._id, fallbackError);
+              logger.error('Error en fallback para pago:', pago._id, fallbackError);
               return {
                 ...pago,
                 totalClases: 0,
@@ -255,7 +256,7 @@ const GestionPagos = () => {
       
     } catch (error) {
       setError('Error al cargar los datos');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -311,9 +312,14 @@ const GestionPagos = () => {
         const fechaInicioCambio = formData.fechaInicio !== fechaInicioOriginal;
         const fechaFinCambio = formData.fechaFin !== fechaFinOriginal;
         
-        console.log('🔍 Verificando cambios de fechas:');
-        console.log(`  Fecha inicio: ${fechaInicioOriginal} → ${formData.fechaInicio} (cambió: ${fechaInicioCambio})`);
-        console.log(`  Fecha fin: ${fechaFinOriginal} → ${formData.fechaFin} (cambió: ${fechaFinCambio})`);
+        logger.debug('🔍 Verificando cambios de fechas', {
+          fechaInicioOriginal,
+          fechaFinOriginal,
+          fechaInicio: formData.fechaInicio,
+          fechaFin: formData.fechaFin,
+          fechaInicioCambio,
+          fechaFinCambio
+        });
         
         if (tipoCreacion === 'individual') {
           // Para clases individuales, siempre enviar las fechas de clases
@@ -341,17 +347,17 @@ const GestionPagos = () => {
             
             pagoData.fechaInicio = formData.fechaInicio;
             pagoData.fechaFin = formData.fechaFin;
-            console.log('📅 Incluyendo fechas cambiadas en la actualización');
+            logger.dev('📅 Incluyendo fechas cambiadas en la actualización');
           } else {
-            console.log('ℹ️  No se incluyen fechas - no hubo cambios');
+            logger.dev('ℹ️  No se incluyen fechas - no hubo cambios');
           }
         }
       }
 
       if (editingPago) {
-        console.log('🔄 Datos a enviar para actualización:', pagoData);
-        console.log('📝 Link de factura en formData:', formData.linkFactura);
-        console.log('📝 Link de factura en pagoData:', pagoData.linkFactura);
+        logger.sensitive('🔄 Datos a enviar para actualización:', pagoData);
+        logger.debug('📝 Link de factura en formData:', formData.linkFactura);
+        logger.debug('📝 Link de factura en pagoData:', pagoData.linkFactura);
         await pagosService.actualizar(editingPago._id, pagoData);
         mostrarNotificacion('Pago actualizado exitosamente', 'success');
       } else {
@@ -373,7 +379,7 @@ const GestionPagos = () => {
       resetForm();
       setShowModal(false);
     } catch (error) {
-      console.error('Error al guardar pago:', error);
+      logger.error('Error al guardar pago:', error);
       
       // Manejo específico de errores del backend
       if (error.response?.data?.error === 'CLASES_REQUERIDAS') {
@@ -393,7 +399,7 @@ const GestionPagos = () => {
         await cargarDatos();
         mostrarNotificacion('Pago eliminado exitosamente', 'success');
       } catch (error) {
-        console.error('Error al eliminar pago:', error);
+        logger.error('Error al eliminar pago:', error);
         mostrarNotificacion('Error al eliminar el pago', 'error');
       }
     }
@@ -438,7 +444,7 @@ const GestionPagos = () => {
         );
         setFechasIndividuales(fechasClases.length > 0 ? fechasClases : ['']);
       } catch (error) {
-        console.error('Error al cargar fechas de clases:', error);
+        logger.error('Error al cargar fechas de clases:', error);
         setFechasIndividuales(['']);
       }
     } else {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { resumenClaseService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { logger } from '../utils/logger';
 
 const ResumenClasesUsuario = () => {
   const { usuario } = useAuth();
@@ -23,7 +24,7 @@ const ResumenClasesUsuario = () => {
       // El backend devuelve { resumenes, total, pagina, totalPaginas }
       setResumenes(response.data?.resumenes || []);
     } catch (error) {
-      console.error('Error al cargar resúmenes:', error);
+      logger.error('Error al cargar resúmenes:', error);
       setError('Error al cargar las clases');
     } finally {
       setLoading(false);

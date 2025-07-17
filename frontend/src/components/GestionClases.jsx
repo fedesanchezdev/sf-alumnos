@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import ResumenClase from './ResumenClase';
 import ResumenClaseCard from './ResumenClaseCard';
 import LoadingSpinner from './LoadingSpinner';
+import { logger } from '../utils/logger';
 
 const ESTADOS_CLASES = {
   no_iniciada: {
@@ -87,7 +88,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
       onEstadoChange(clase._id);
       setShowModal(false);
     } catch (error) {
-      console.error('Error al cambiar estado:', error);
+      logger.error('Error al cambiar estado:', error);
       alert('Error al cambiar el estado de la clase');
     } finally {
       setIsUpdating(false);
@@ -111,7 +112,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
       onEstadoChange(clase._id);
       setShowModal(false);
     } catch (error) {
-      console.error('Error al deshacer reprogramación:', error);
+      logger.error('Error al deshacer reprogramación:', error);
       alert('Error al deshacer la reprogramación');
     } finally {
       setIsUpdating(false);
@@ -137,7 +138,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
       setShowEditNotas(false);
       
     } catch (error) {
-      console.error('Error al actualizar notas:', error);
+      logger.error('Error al actualizar notas:', error);
       alert('Error al actualizar las notas: ' + (error.message || 'Error desconocido'));
     } finally {
       setIsUpdating(false);
@@ -177,7 +178,7 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
       onEstadoChange(clase._id);
       
     } catch (error) {
-      console.error('Error al eliminar notas:', error);
+      logger.error('Error al eliminar notas:', error);
       alert('Error al eliminar las notas: ' + (error.message || 'Error desconocido'));
     } finally {
       setIsUpdating(false);
@@ -245,10 +246,11 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
                 alert('Error: No se puede abrir el resumen. Usuario no seleccionado.');
                 return;
               }
-              console.log('Abriendo resumen via enlace');
-              console.log('Usuario ID:', usuarioId);
-              console.log('Clase ID:', clase._id);
-              console.log('URL generada:', `/alumnos/admin/resumen-clase/${clase._id}?usuarioId=${usuarioId}&fecha=${encodeURIComponent(clase.fecha)}&newTab=true`);
+              logger.debug('Abriendo resumen via enlace', {
+                usuarioId,
+                claseId: clase._id,
+                url: `/alumnos/admin/resumen-clase/${clase._id}?usuarioId=${usuarioId}&fecha=${encodeURIComponent(clase.fecha)}&newTab=true`
+              });
             }}
             className="flex-1 px-2 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-xs font-medium transition-colors text-center inline-block"
           >
@@ -451,7 +453,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       const key = getLocalStorageKey(usuarioId);
       localStorage.setItem(key, JSON.stringify(orden));
     } catch (error) {
-      console.error('Error al guardar orden en localStorage:', error);
+      logger.error('Error al guardar orden en localStorage:', error);
     }
   };
   
@@ -461,7 +463,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       const ordenGuardado = localStorage.getItem(key);
       return ordenGuardado ? JSON.parse(ordenGuardado) : null;
     } catch (error) {
-      console.error('Error al obtener orden de localStorage:', error);
+      logger.error('Error al obtener orden de localStorage:', error);
       return null;
     }
   };
@@ -473,7 +475,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
         const response = await usuariosService.obtenerTodos();
         setUsuarios(response.data);
       } catch (error) {
-        console.error('Error al obtener usuarios:', error);
+        logger.error('Error al obtener usuarios:', error);
       }
     };
 
@@ -495,7 +497,10 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       setClasesOrdenadas([]);
       setFiltroEstado(null); // Limpiar filtro al cambiar de usuario
       cargarClases();
-      cargarResumenes();
+      // Cargar resúmenes con un pequeño delay para evitar llamadas excesivas
+      setTimeout(() => {
+        cargarResumenes();
+      }, 150);
     } else {
       // Si no hay usuario seleccionado, limpiar todo
       setClasesOrdenadas([]);
@@ -564,20 +569,31 @@ const GestionClases = ({ usuarioSeleccionado }) => {
 
   // Escuchar eventos de actualización de resumen desde otras pestañas
   useEffect(() => {
+    let ultimoEventoTimestamp = 0; // Para evitar eventos duplicados
+    
     const handleStorageChange = (e) => {
       if (e.key === 'resumen_update_event' && e.newValue) {
         try {
           const event = JSON.parse(e.newValue);
-          console.log('📝 Evento de resumen detectado:', event);
+          
+          // Evitar procesar el mismo evento múltiples veces
+          if (event.timestamp && event.timestamp <= ultimoEventoTimestamp) {
+            return;
+          }
+          
+          logger.dev('📝 Evento de resumen detectado:', event);
+          ultimoEventoTimestamp = event.timestamp;
           
           // Verificar si el evento es para el usuario actual
           if (event.type === 'resumen_guardado' && event.usuarioId === usuarioActual) {
-            console.log('🔄 Recargando resúmenes por actualización desde nueva pestaña...');
-            // Recargar resúmenes del usuario actual
-            cargarResumenes();
+            logger.info('🔄 Recargando resúmenes por actualización desde nueva pestaña...');
+            // Recargar resúmenes del usuario actual con un delay más largo para evitar spam
+            setTimeout(() => {
+              cargarResumenes();
+            }, 300);
           }
         } catch (error) {
-          console.error('Error al procesar evento de resumen:', error);
+          logger.error('Error al procesar evento de resumen:', error);
         }
       }
     };
@@ -603,7 +619,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       setUltimoPago(response.data.ultimoPago);
     } catch (error) {
       setError('Error al cargar las clases');
-      console.error('Error:', error);
+      logger.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -615,26 +631,32 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       return;
     }
     
-    console.log('🔄 Cargando resúmenes para usuario:', usuarioActual);
+    // Evitar llamadas simultáneas
+    if (loadingResumenes) {
+      logger.dev('⏳ Ya se están cargando resúmenes, saltando...');
+      return;
+    }
+    
+    logger.dev('🔄 Cargando resúmenes para usuario:', usuarioActual);
     setLoadingResumenes(true);
     try {
       const response = await resumenClaseService.obtenerPorUsuario(usuarioActual);
-      console.log('📝 Respuesta de resúmenes:', response.data);
+      logger.sensitive('📝 Respuesta de resúmenes:', response.data);
       
       // Filtrar resúmenes que tengan datos válidos de clase
       const resumenesValidos = (response.data.resumenes || []).filter(resumen => 
         resumen && resumen.clase && resumen.clase.fecha
       );
       
-      console.log('✅ Resúmenes válidos:', resumenesValidos.length, 'de', (response.data.resumenes || []).length);
+      logger.dev('✅ Resúmenes válidos:', resumenesValidos.length, 'de', (response.data.resumenes || []).length);
       
       if (resumenesValidos.length !== (response.data.resumenes || []).length) {
-        console.warn('⚠️ Se filtraron resúmenes con datos incompletos de clase');
+        logger.warn('⚠️ Se filtraron resúmenes con datos incompletos de clase');
       }
       
       setResumenes(resumenesValidos);
     } catch (error) {
-      console.error('❌ Error al cargar resúmenes:', error);
+      logger.error('❌ Error al cargar resúmenes:', error);
       setResumenes([]);
     } finally {
       setLoadingResumenes(false);
@@ -686,7 +708,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       
       setResumen(resumenCompleto);
     } catch (error) {
-      console.error('Error al calcular resumen:', error);
+      logger.error('Error al calcular resumen:', error);
     }
   };
 
@@ -696,7 +718,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       const response = await clasesService.obtenerEstudiantesPorDia();
       setEstudiantesPorDia(response.data);
     } catch (error) {
-      console.error('Error al cargar estudiantes por día:', error);
+      logger.error('Error al cargar estudiantes por día:', error);
     } finally {
       setLoadingEstudiantes(false);
     }
@@ -767,9 +789,11 @@ const GestionClases = ({ usuarioSeleccionado }) => {
   };
 
   const handleResumenGuardado = () => {
-    console.log('💾 Resumen guardado, recargando lista de resúmenes...');
-    // Recargar resúmenes después de guardar
-    cargarResumenes();
+    logger.info('💾 Resumen guardado, recargando lista de resúmenes...');
+    // Recargar resúmenes después de guardar con un pequeño delay para evitar spam
+    setTimeout(() => {
+      cargarResumenes();
+    }, 200);
     setResumenEditando(null);
   };
 

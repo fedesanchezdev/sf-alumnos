@@ -32,15 +32,11 @@ export const enviarWhatsApp = (mensaje, telefono = null) => {
   
   let whatsappUrl;
   if (telefono && telefono.trim() !== '') {
-    // Limpiar el número de teléfono (quitar espacios, guiones, paréntesis, etc.)
-    let telefonoLimpio = telefono.replace(/[\s\-\(\)+]/g, '');
+    // Limpiar el número de teléfono solo de espacios, guiones, paréntesis
+    // PERO mantener el número exactamente como está registrado (sin agregar código de país)
+    let telefonoLimpio = telefono.replace(/[\s\-\(\)]/g, '');
     
-    // Si no empieza con código de país, agregar +54 (Argentina)
-    if (!telefonoLimpio.startsWith('54') && !telefonoLimpio.startsWith('+')) {
-      telefonoLimpio = '54' + telefonoLimpio;
-    }
-    
-    // Remover el + si existe al inicio
+    // Remover el + si existe al inicio (WhatsApp API no lo necesita)
     telefonoLimpio = telefonoLimpio.replace(/^\+/, '');
     
     whatsappUrl = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${mensajeCodificado}`;

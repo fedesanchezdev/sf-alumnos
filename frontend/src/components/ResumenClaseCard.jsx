@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { formatearFechaCorta } from '../utils/fechas';
 import { resumenClaseService } from '../services/api';
 import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
+import { logger } from '../utils/logger';
 
 const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
   const [enviando, setEnviando] = useState(false);
 
   // Validar que resumen y clase existan
   if (!resumen || !resumen.clase) {
-    console.warn('ResumenClaseCard: resumen o clase es null/undefined', resumen);
+    logger.warn('ResumenClaseCard: resumen o clase es null/undefined', resumen);
     return (
       <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 shadow-md">
         <p className="text-red-600">⚠️ Error: Datos de resumen incompletos</p>
@@ -35,7 +36,7 @@ const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
       }
       
     } catch (error) {
-      console.error('Error al enviar por WhatsApp:', error);
+      logger.error('Error al enviar por WhatsApp:', error);
       alert('❌ Error al procesar el envío por WhatsApp');
     } finally {
       setEnviando(false);
@@ -49,7 +50,7 @@ const ResumenClaseCard = ({ resumen, onEdit, onDelete }) => {
         onDelete(resumen._id);
         alert('✅ Resumen eliminado exitosamente');
       } catch (error) {
-        console.error('Error al eliminar resumen:', error);
+        logger.error('Error al eliminar resumen:', error);
         alert('❌ Error al eliminar el resumen');
       }
     }

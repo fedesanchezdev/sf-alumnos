@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { partiturasService, resumenClaseService, usuariosService } from '../services/api';
 import { formatearFechaCorta } from '../utils/fechas';
 import { enviarWhatsApp, generarMensajeResumen } from '../utils/whatsapp';
+import { logger } from '../utils/logger';
 
 const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExistente, isStandalone = false }) => {
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
           const usuarioResponse = await usuariosService.obtenerPorId(usuarioId);
           setUsuario(usuarioResponse.data);
         } catch (error) {
-          console.error('Error al cargar usuario:', error);
+          logger.error('Error al cargar usuario:', error);
         }
       }
       
@@ -64,7 +65,7 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
         }
       }
     } catch (error) {
-      console.error('Error al cargar datos:', error);
+      logger.error('Error al cargar datos:', error);
     } finally {
       setLoading(false);
     }
@@ -76,60 +77,52 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
 
   const agregarObra = () => {
     if (!nuevaObra.compositor || !nuevaObra.obra) {
-      alert('Por favor selecciona compositor y obra');
+      alert('Por favor completa compositor y obra');
       return;
     }
 
-    console.log('Buscando partitura:', { compositor: nuevaObra.compositor, obra: nuevaObra.obra });
-    console.log('Partituras disponibles:', partituras.map(p => ({ id: p._id, compositor: p.compositor, obra: p.obra })));
+    logger.dev('Agregando obra:', { compositor: nuevaObra.compositor, obra: nuevaObra.obra });
 
+    // Buscar si existe en la base de datos
     const partitura = partituras.find(p => 
       p.compositor === nuevaObra.compositor && p.obra === nuevaObra.obra
     );
 
-    if (!partitura) {
-      alert('⚠️ Obra no encontrada en la base de datos. Por favor verifica la selección.');
-      console.error('Partitura no encontrada para:', { compositor: nuevaObra.compositor, obra: nuevaObra.obra });
-      return;
-    }
-
-    if (!partitura._id) {
-      alert('⚠️ Error: La partitura no tiene ID válido');
-      console.error('Partitura sin ID:', partitura);
-      return;
-    }
-
-    console.log('Partitura encontrada:', partitura);
-
-    const yaExiste = formData.obrasEstudiadas.some(obra => 
-      obra.compositor === nuevaObra.compositor && obra.obra === nuevaObra.obra
+    // Verificar si ya existe exactamente la misma obra con los mismos movimientos/compases
+    const yaExisteExacto = formData.obrasEstudiadas.some(obra => 
+      obra.compositor === nuevaObra.compositor && 
+      obra.obra === nuevaObra.obra &&
+      obra.movimientosCompases === nuevaObra.movimientosCompases
     );
 
-    if (yaExiste) {
-      alert('Esta obra ya está agregada');
+    if (yaExisteExacto) {
+      alert('Esta obra con los mismos movimientos/compases ya está agregada. Si quieres agregar diferentes movimientos, especifica movimientos distintos.');
       return;
     }
 
     const obraCompleta = {
       id: Date.now(), // ID temporal para React
-      partitura: partitura._id,
       compositor: nuevaObra.compositor,
       obra: nuevaObra.obra,
-      movimientosCompases: nuevaObra.movimientosCompases,
-      comentarios: nuevaObra.comentarios
+      movimientosCompases: nuevaObra.movimientosCompases || '',
+      comentarios: nuevaObra.comentarios || '',
+      // Solo incluir partitura si existe en la DB
+      ...(partitura && partitura._id ? { partitura: partitura._id } : {}),
+      // Marcar si es manual (no está en DB)
+      esManual: !partitura || !partitura._id
     };
 
-    console.log('Obra completa agregada:', obraCompleta);
+    logger.dev('Obra completa a agregar:', obraCompleta);
+    logger.dev(partitura ? 'Obra encontrada en DB' : 'Obra manual (no está en DB)');
 
     setFormData({
       ...formData,
       obrasEstudiadas: [...formData.obrasEstudiadas, obraCompleta]
     });
 
-    // Limpiar formulario
+    // Limpiar solo movimientos y comentarios, mantener compositor y obra para facilitar agregar más movimientos
     setNuevaObra({
-      compositor: '',
-      obra: '',
+      ...nuevaObra,
       movimientosCompases: '',
       comentarios: ''
     });
@@ -160,32 +153,34 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
     setSaving(true);
 
     try {
-      const datosParaEnviar = {
-        claseId: claseId,
-        obrasEstudiadas: formData.obrasEstudiadas
-          .filter(obra => obra.partitura) // Solo incluir obras con partitura válida
-          .map(obra => ({
-            partitura: obra.partitura,
-            compositor: obra.compositor,
-            obra: obra.obra,
-            movimientosCompases: obra.movimientosCompases,
-            comentarios: obra.comentarios
-          })),
-        objetivosProximaClase: formData.objetivosProximaClase
-      };
-
-      console.log('Datos enviados al backend:', datosParaEnviar);
-      
-      // Verificar que todas las obras tienen partitura válida
-      const obrasSinPartitura = formData.obrasEstudiadas.filter(obra => !obra.partitura);
-      if (obrasSinPartitura.length > 0) {
-        console.warn('Obras sin partitura encontradas:', obrasSinPartitura);
-        alert(`⚠️ Hay ${obrasSinPartitura.length} obra(s) sin partitura válida que serán omitidas. Por favor, verifica las obras seleccionadas.`);
+      if (formData.obrasEstudiadas.length === 0) {
+        alert('⚠️ No hay obras agregadas. Por favor, agrega al menos una obra.');
+        setSaving(false);
+        return;
       }
 
-      await resumenClaseService.crearOActualizar(datosParaEnviar);
+      const datosParaEnviar = {
+        claseId: claseId,
+        obrasEstudiadas: formData.obrasEstudiadas.map(obra => ({
+          // Solo incluir partitura si existe (obra de la DB)
+          ...(obra.partitura ? { partitura: obra.partitura } : {}),
+          compositor: obra.compositor,
+          obra: obra.obra,
+          movimientosCompases: obra.movimientosCompases || '',
+          comentarios: obra.comentarios || '',
+          esManual: obra.esManual || false
+        })),
+        objetivosProximaClase: formData.objetivosProximaClase || ''
+      };
+
+      logger.sensitive('Datos enviados al backend:', datosParaEnviar);
+      logger.dev('Obras de DB:', datosParaEnviar.obrasEstudiadas.filter(o => o.partitura).length);
+      logger.dev('Obras manuales:', datosParaEnviar.obrasEstudiadas.filter(o => o.esManual).length);
       
-      console.log('💾 Resumen guardado exitosamente, llamando onSave...');
+      const response = await resumenClaseService.crearOActualizar(datosParaEnviar);
+      logger.sensitive('Respuesta del backend:', response.data);
+      
+      logger.success('Resumen guardado exitosamente, llamando onSave...');
       if (onSave) {
         onSave();
       }
@@ -194,8 +189,22 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
       onClose();
       
     } catch (error) {
-      console.error('Error al guardar resumen:', error);
-      alert('❌ Error al guardar el resumen');
+      logger.error('Error al guardar resumen:', error);
+      logger.sensitive('Respuesta del error:', error.response?.data);
+      
+      // Mostrar mensaje de error más específico
+      let mensajeError = 'Error al guardar el resumen';
+      if (error.response?.data?.message) {
+        mensajeError = error.response.data.message;
+        
+        // Si hay partituras no encontradas, mostrar detalles
+        if (error.response.data.partiturasNoEncontradas) {
+          logger.error('Partituras no encontradas:', error.response.data.partiturasNoEncontradas);
+          mensajeError += `\n\nPartituras no válidas encontradas. Por favor, vuelve a seleccionar las obras.`;
+        }
+      }
+      
+      alert(`❌ ${mensajeError}`);
     } finally {
       setSaving(false);
     }
@@ -208,16 +217,16 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
       // Primero guardar
       const datosParaEnviar = {
         claseId: claseId,
-        obrasEstudiadas: formData.obrasEstudiadas
-          .filter(obra => obra.partitura) // Solo incluir obras con partitura válida
-          .map(obra => ({
-            partitura: obra.partitura,
-            compositor: obra.compositor,
-            obra: obra.obra,
-            movimientosCompases: obra.movimientosCompases,
-            comentarios: obra.comentarios
-          })),
-        objetivosProximaClase: formData.objetivosProximaClase
+        obrasEstudiadas: formData.obrasEstudiadas.map(obra => ({
+          // Solo incluir partitura si existe (obra de la DB)
+          ...(obra.partitura ? { partitura: obra.partitura } : {}),
+          compositor: obra.compositor,
+          obra: obra.obra,
+          movimientosCompases: obra.movimientosCompases || '',
+          comentarios: obra.comentarios || '',
+          esManual: obra.esManual || false
+        })),
+        objetivosProximaClase: formData.objetivosProximaClase || ''
       };
 
       await resumenClaseService.crearOActualizar(datosParaEnviar);
@@ -236,7 +245,7 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
         enviarWhatsApp(mensaje);
       }
       
-      console.log('💾 Resumen guardado exitosamente (WhatsApp), llamando onSave...');
+      logger.success('Resumen guardado exitosamente (WhatsApp), llamando onSave...');
       if (onSave) {
         onSave();
       }
@@ -245,7 +254,7 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
       onClose();
       
     } catch (error) {
-      console.error('Error al guardar y enviar por WhatsApp:', error);
+      logger.error('Error al guardar y enviar por WhatsApp:', error);
       alert('❌ Error al procesar la acción');
     } finally {
       setSaving(false);
@@ -317,28 +326,52 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
               {/* Formulario para agregar nueva obra */}
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <h4 className="font-medium mb-3">Agregar Nueva Obra</h4>
+                <div className="mb-3 p-3 bg-blue-50 rounded-md border border-blue-200">
+                  <p className="text-sm text-blue-800">
+                    💡 <strong>Opciones para agregar obras:</strong>
+                  </p>
+                  <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                    <li>📚 <strong>De la biblioteca:</strong> Selecciona de los menús desplegables</li>
+                    <li>✏️ <strong>Manual:</strong> Escribe directamente compositor y obra (no requiere estar en la biblioteca)</li>
+                    <li>🔄 <strong>Múltiples movimientos:</strong> Agrega el mismo compositor/obra con diferentes movimientos</li>
+                  </ul>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Selector de Compositor */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Compositor
                     </label>
-                    <select
-                      value={nuevaObra.compositor}
-                      onChange={(e) => setNuevaObra({
-                        ...nuevaObra,
-                        compositor: e.target.value,
-                        obra: '' // Resetear obra al cambiar compositor
-                      })}
-                      className="w-full p-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">Seleccionar compositor...</option>
-                      {compositores.map(compositor => (
-                        <option key={compositor} value={compositor}>
-                          {compositor}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="space-y-2">
+                      <select
+                        value={nuevaObra.compositor}
+                        onChange={(e) => setNuevaObra({
+                          ...nuevaObra,
+                          compositor: e.target.value,
+                          obra: '' // Resetear obra al cambiar compositor
+                        })}
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="">Seleccionar de la biblioteca...</option>
+                        {compositores.map(compositor => (
+                          <option key={compositor} value={compositor}>
+                            {compositor}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="text-xs text-gray-500 text-center">O</div>
+                      <input
+                        type="text"
+                        value={nuevaObra.compositor}
+                        onChange={(e) => setNuevaObra({
+                          ...nuevaObra,
+                          compositor: e.target.value,
+                          obra: '' // Resetear obra al cambiar compositor
+                        })}
+                        placeholder="Escribir compositor manualmente..."
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
                   </div>
 
                   {/* Selector de Obra */}
@@ -346,22 +379,39 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Obra
                     </label>
-                    <select
-                      value={nuevaObra.obra}
-                      onChange={(e) => setNuevaObra({
-                        ...nuevaObra,
-                        obra: e.target.value
-                      })}
-                      disabled={!nuevaObra.compositor}
-                      className="w-full p-2 border border-gray-300 rounded-md disabled:bg-gray-100"
-                    >
-                      <option value="">Seleccionar obra...</option>
-                      {nuevaObra.compositor && getObrasDelCompositor(nuevaObra.compositor).map(partitura => (
-                        <option key={partitura._id} value={partitura.obra}>
-                          {partitura.obra}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="space-y-2">
+                      {/* Mostrar selector solo si hay compositor seleccionado de la biblioteca */}
+                      {nuevaObra.compositor && compositores.includes(nuevaObra.compositor) && (
+                        <select
+                          value={nuevaObra.obra}
+                          onChange={(e) => setNuevaObra({
+                            ...nuevaObra,
+                            obra: e.target.value
+                          })}
+                          className="w-full p-2 border border-gray-300 rounded-md"
+                        >
+                          <option value="">Seleccionar de la biblioteca...</option>
+                          {getObrasDelCompositor(nuevaObra.compositor).map(partitura => (
+                            <option key={partitura._id} value={partitura.obra}>
+                              {partitura.obra}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {nuevaObra.compositor && compositores.includes(nuevaObra.compositor) && (
+                        <div className="text-xs text-gray-500 text-center">O</div>
+                      )}
+                      <input
+                        type="text"
+                        value={nuevaObra.obra}
+                        onChange={(e) => setNuevaObra({
+                          ...nuevaObra,
+                          obra: e.target.value
+                        })}
+                        placeholder="Escribir obra manualmente..."
+                        className="w-full p-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -399,71 +449,129 @@ const ResumenClase = ({ claseId, usuarioId, fecha, onClose, onSave, resumenExist
                   />
                 </div>
 
-                {/* Botón agregar obra */}
-                <div className="mt-4">
+                {/* Botones para agregar obra */}
+                <div className="mt-4 flex gap-2">
                   <button
                     type="button"
                     onClick={agregarObra}
                     disabled={!nuevaObra.compositor || !nuevaObra.obra}
                     className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    ➕ Agregar Obra
+                    ➕ Agregar Movimiento/Ejercicio
                   </button>
+                  
+                  {(nuevaObra.compositor || nuevaObra.obra) && (
+                    <button
+                      type="button"
+                      onClick={() => setNuevaObra({
+                        compositor: '',
+                        obra: '',
+                        movimientosCompases: '',
+                        comentarios: ''
+                      })}
+                      className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600"
+                    >
+                      🔄 Nueva Obra
+                    </button>
+                  )}
                 </div>
+                
+                {/* Ayuda para múltiples movimientos */}
+                {nuevaObra.compositor && nuevaObra.obra && (
+                  <div className="mt-2 p-3 bg-blue-50 rounded-md border border-blue-200">
+                    <p className="text-sm text-blue-800">
+                      💡 <strong>Tip:</strong> Puedes agregar múltiples movimientos de la misma obra. 
+                      Después de agregar un movimiento, el formulario mantiene la obra seleccionada 
+                      para que puedas agregar fácilmente otro movimiento o ejercicio.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Lista de obras agregadas */}
               <div className="space-y-3">
-                {formData.obrasEstudiadas.map((obra, index) => (
-                  <div key={obra.id || index} className="border border-gray-300 rounded-lg p-4 bg-white">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-semibold text-gray-900">
-                          {obra.compositor}
-                        </h4>
-                        <p className="text-gray-700">{obra.obra}</p>
+                {formData.obrasEstudiadas.map((obra, index) => {
+                  // Verificar si hay otras obras del mismo compositor y título
+                  const obrasIguales = formData.obrasEstudiadas.filter(o => 
+                    o.compositor === obra.compositor && o.obra === obra.obra
+                  );
+                  const esMultiple = obrasIguales.length > 1;
+                  const numeroMovimiento = obrasIguales.findIndex(o => o.id === obra.id) + 1;
+                  
+                  return (
+                    <div key={obra.id || index} className={`border rounded-lg p-4 bg-white ${esMultiple ? 'border-blue-300 bg-blue-50' : 'border-gray-300'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                            {obra.compositor}
+                            {esMultiple && (
+                              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">
+                                #{numeroMovimiento}
+                              </span>
+                            )}
+                            {obra.esManual && (
+                              <span className="bg-orange-500 text-white text-xs px-2 py-1 rounded-full" title="Obra agregada manualmente">
+                                ✏️ Manual
+                              </span>
+                            )}
+                            {!obra.esManual && obra.partitura && (
+                              <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full" title="Obra de la biblioteca">
+                                📚 Biblioteca
+                              </span>
+                            )}
+                          </h4>
+                          <p className="text-gray-700">{obra.obra}</p>
+                          {esMultiple && (
+                            <p className="text-xs text-blue-600 mt-1">
+                              📚 {obrasIguales.length} movimientos/ejercicios de esta obra
+                            </p>
+                          )}
+                          {obra.esManual && (
+                            <p className="text-xs text-orange-600 mt-1">
+                              ℹ️ Obra agregada manualmente (no requiere estar en la biblioteca)
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => eliminarObra(index)}
+                          className="text-red-600 hover:text-red-800 text-lg"
+                          title="Eliminar este movimiento"
+                        >
+                          🗑️
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => eliminarObra(index)}
-                        className="text-red-600 hover:text-red-800 text-lg"
-                        title="Eliminar obra"
-                      >
-                        🗑️
-                      </button>
-                    </div>
 
-                    {/* Campos editables */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Movimientos/Compases
-                        </label>
-                        <input
-                          type="text"
-                          value={obra.movimientosCompases || ''}
-                          onChange={(e) => actualizarObra(index, 'movimientosCompases', e.target.value)}
-                          placeholder="Ej: 1er movimiento, compases 1-32..."
-                          className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Comentarios
-                        </label>
-                        <textarea
-                          value={obra.comentarios || ''}
-                          onChange={(e) => actualizarObra(index, 'comentarios', e.target.value)}
-                          placeholder="Qué se trabajó, correcciones..."
-                          className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                          rows="2"
-                        />
+                      {/* Campos editables */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Movimientos/Compases/Ejercicios
+                          </label>
+                          <input
+                            type="text"
+                            value={obra.movimientosCompases || ''}
+                            onChange={(e) => actualizarObra(index, 'movimientosCompases', e.target.value)}
+                            placeholder="Ej: Ejercicio 20, 1er movimiento, compases 1-32..."
+                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Comentarios
+                          </label>
+                          <textarea
+                            value={obra.comentarios || ''}
+                            onChange={(e) => actualizarObra(index, 'comentarios', e.target.value)}
+                            placeholder="Qué se trabajó, correcciones..."
+                            className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                            rows="2"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-
-                {formData.obrasEstudiadas.length === 0 && (
+                  );
+                })}                {formData.obrasEstudiadas.length === 0 && (
                   <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
                     <p className="text-lg">🎼</p>
                     <p>No hay obras agregadas</p>
