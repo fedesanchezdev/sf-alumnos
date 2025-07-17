@@ -83,6 +83,7 @@ export const actualizarEstadoClase = async (req, res) => {
       clase.notas = notas;
     }
     
+    // Manejar fecha reprogramada
     if (estado === 'reprogramar' && fechaReprogramada) {
       // Si la fecha ya es un objeto Date, usarla directamente
       // Si es un string, crear Date y ajustar a mediodía UTC (no local)
@@ -101,6 +102,28 @@ export const actualizarEstadoClase = async (req, res) => {
       }
       
       clase.fechaReprogramada = fechaAjustada;
+    } else if (fechaReprogramada === null) {
+      // Si explícitamente enviamos null, eliminar completamente la fecha reprogramada
+      clase.fechaReprogramada = undefined;
+      // Usar $unset para eliminar el campo completamente del documento
+      await Clase.updateOne(
+        { _id: id },
+        { 
+          $unset: { fechaReprogramada: "" },
+          $set: { estado: estado, notas: notas !== undefined ? notas : clase.notas }
+        }
+      );
+      
+      // Obtener la clase actualizada para la respuesta
+      const claseActualizada = await Clase.findById(id)
+        .populate('pago', 'monto fechaPago descripcion')
+        .populate('usuario', 'nombre apellido email')
+        .lean();
+
+      return res.json({
+        message: 'Estado de clase actualizado exitosamente',
+        clase: claseActualizada
+      });
     }
 
     await clase.save();

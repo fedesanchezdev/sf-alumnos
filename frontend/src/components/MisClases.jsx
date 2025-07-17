@@ -289,27 +289,11 @@ const MisClases = () => {
       setLoadingClases(true);
       const response = await clasesService.obtenerSeparadas(usuario._id);
       
-      // Función para ordenar clases: no iniciadas primero, luego tomadas, luego por fecha
+      // Función para ordenar clases únicamente por fecha cronológica (más antigua primero)
       const ordenarClases = (clasesArray) => {
         return clasesArray.sort((a, b) => {
-          // Prioridad por estado: no_iniciada > tomada > otros estados
-          const prioridadEstado = (estado) => {
-            switch (estado) {
-              case 'no_iniciada': return 1;
-              case 'tomada': return 2;
-              default: return 3;
-            }
-          };
-          
-          const prioridadA = prioridadEstado(a.estado);
-          const prioridadB = prioridadEstado(b.estado);
-          
-          if (prioridadA !== prioridadB) {
-            return prioridadA - prioridadB;
-          }
-          
-          // Si tienen el mismo estado, ordenar por fecha (más reciente primero)
-          return new Date(b.fecha) - new Date(a.fecha);
+          // Ordenar solo por fecha cronológica (más antigua primero)
+          return new Date(a.fecha) - new Date(b.fecha);
         });
       };
 

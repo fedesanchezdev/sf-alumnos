@@ -94,6 +94,30 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
     }
   };
 
+  const handleDeshacerReprogramacion = async () => {
+    if (!confirm('¿Estás seguro de que quieres deshacer la reprogramación? La clase volverá a estado "No iniciada" y se eliminará la fecha reprogramada.')) {
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const data = {
+        estado: 'no_iniciada',
+        notas: notas,
+        fechaReprogramada: null // Eliminar la fecha reprogramada
+      };
+
+      await clasesService.actualizarEstado(clase._id, data);
+      onEstadoChange(clase._id);
+      setShowModal(false);
+    } catch (error) {
+      console.error('Error al deshacer reprogramación:', error);
+      alert('Error al deshacer la reprogramación');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleActualizarNotas = async () => {
     setIsUpdating(true);
     try {
@@ -252,6 +276,18 @@ const ClaseCard = ({ clase, onEstadoChange, usuarioId, onResumenGuardado }) => {
             )}
 
             <div className="grid grid-cols-1 gap-2 mb-4">
+              {/* Mostrar opción de deshacer reprogramación si corresponde */}
+              {clase.estado === 'reprogramar' && clase.fechaReprogramada && (
+                <button
+                  onClick={() => handleDeshacerReprogramacion()}
+                  disabled={isUpdating}
+                  className="bg-gray-600 hover:bg-gray-700 text-white p-2 rounded text-sm font-semibold disabled:opacity-50 flex items-center gap-2 border-2 border-gray-400"
+                >
+                  <span>↩️</span>
+                  Deshacer reprogramación
+                </button>
+              )}
+              
               {Object.entries(ESTADOS_CLASES).map(([key, estado]) => (
                 <button
                   key={key}

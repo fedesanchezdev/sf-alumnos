@@ -156,41 +156,55 @@ const Sidebar = () => {
       </aside>
 
       {/* Menú móvil en la parte inferior para dispositivos pequeños */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-lg z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-600 shadow-lg z-50">
         <div className="flex justify-around items-center py-2">
           {/* Mostrar los primeros 4 elementos principales */}
-          {menuItems.slice(0, 4).map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs font-medium transition-colors duration-200 ${
-                isActive(item.path)
-                  ? 'text-indigo-600'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <div className={`${isActive(item.path) ? 'text-indigo-600' : 'text-slate-500'}`}>
-                {item.icon}
-              </div>
-              <span className="mt-1 text-[10px] leading-tight text-center break-words max-w-full">
-                {item.name.length > 8 ? 
-                  item.name.split(' ').map(word => word.length > 4 ? word.substring(0, 4) : word).join(' ') : 
-                  item.name
-                }
-              </span>
-            </Link>
-          ))}
+          {menuItems.slice(0, 4).map((item) => {
+            // Mapeo de nombres largos a versiones cortas para móvil
+            const getMobileLabel = (name) => {
+              const mobileLabels = {
+                'Gestión de Clases': 'Clases',
+                'Partituras': 'Part.',
+                'Gestión de Pagos': 'Pagos',
+                'Mis Clases': 'Clases',
+                'Mis Pagos': 'Pagos',
+                'Cambiar Contraseña': 'Pass.',
+                'Admin Partituras': 'Admin',
+                'Gestión de Usuarios': 'Users'
+              };
+              return mobileLabels[name] || name;
+            };
+            
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs font-medium transition-colors duration-200 ${
+                  isActive(item.path)
+                    ? 'text-white bg-slate-700'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                <div className={`${isActive(item.path) ? 'text-white' : 'text-slate-300'}`}>
+                  {item.icon}
+                </div>
+                <span className="mt-1 text-[10px] leading-tight text-center font-semibold">
+                  {getMobileLabel(item.name)}
+                </span>
+              </Link>
+            );
+          })}
           
           {/* Botón "Más" si hay más de 4 elementos */}
           {menuItems.length > 4 && (
             <button
               onClick={() => setShowMobileMenu(true)}
-              className="flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
+              className="flex flex-col items-center justify-center min-w-0 flex-1 px-1 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-700 transition-colors duration-200"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
-              <span className="mt-1 text-[10px]">Más</span>
+              <span className="mt-1 text-[10px] font-semibold">Más</span>
             </button>
           )}
         </div>
