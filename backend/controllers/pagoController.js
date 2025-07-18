@@ -232,8 +232,6 @@ export const actualizarPago = async (req, res) => {
     // 1. Las fechas del período realmente cambiaron, O
     // 2. Se proporcionan fechas específicas de clases
     if (fechasCambiaron && fechaInicio && fechaFin) {
-      console.log(`🔄 Regenerando clases para pago ${id} - fechas cambiaron de ${fechaInicioAnterior}-${fechaFinAnterior} a ${fechaInicioNueva}-${fechaFinNueva}`);
-      
       // Obtener las clases existentes para preservar las que ya fueron tomadas
       const clasesExistentes = await Clase.find({ pago: id });
       const clasesTomadas = clasesExistentes.filter(clase => clase.estado !== 'no_iniciada');
@@ -243,8 +241,6 @@ export const actualizarPago = async (req, res) => {
         pago: id,
         estado: 'no_iniciada'
       });
-      
-      console.log(`🗑️  Eliminadas ${clasesEliminadas.deletedCount} clases no iniciadas`);
 
       // Generar nuevas fechas de clases
       const fechasClases = generarFechasClases(pago.fechaInicio, pago.fechaFin);
@@ -259,8 +255,6 @@ export const actualizarPago = async (req, res) => {
         return !fechasClasesTomadas.includes(fechaStr);
       });
 
-      console.log(`📅 Fechas generadas: ${fechasClases.length}, fechas nuevas: ${fechasNuevas.length}`);
-
       // Crear nuevas clases solo para fechas que no tienen clases tomadas
       if (fechasNuevas.length > 0) {
         const nuevasClases = fechasNuevas.map(fecha => ({
@@ -271,11 +265,9 @@ export const actualizarPago = async (req, res) => {
         }));
 
         await Clase.insertMany(nuevasClases);
-        console.log(`✅ Creadas ${nuevasClases.length} nuevas clases`);
       }
     } else if (fechasClases && Array.isArray(fechasClases)) {
       // Si se proporcionan fechas específicas, actualizar clases individuales
-      console.log(`📋 Actualizando clases individuales para pago ${id}`);
       
       // Eliminar clases no iniciadas
       await Clase.deleteMany({
@@ -292,9 +284,6 @@ export const actualizarPago = async (req, res) => {
       }));
 
       await Clase.insertMany(nuevasClases);
-      console.log(`✅ Creadas ${nuevasClases.length} clases individuales`);
-    } else {
-      console.log(`ℹ️  No se regeneraron clases para pago ${id} - sin cambios en fechas`);
     }
 
     const pagoActualizado = await Pago.findById(id)

@@ -71,8 +71,6 @@ export const obtenerResumenesPorUsuario = async (req, res) => {
       .limit(parseInt(limite))
       .lean();
 
-    console.log(`Encontrados ${resumenes.length} resúmenes para usuario ${usuarioId}`);
-    
     // Filtrar resúmenes que tienen clase null y loggear los problemáticos
     const resumenesValidos = resumenes.filter(resumen => {
       if (!resumen.clase) {
@@ -118,16 +116,9 @@ export const crearOActualizarResumen = async (req, res) => {
       objetivosProximaClase 
     } = req.body;
 
-    console.log('Datos recibidos en backend:', {
-      claseId,
-      obrasEstudiadas,
-      objetivosProximaClase
-    });
-
     // Verificar que la clase existe
     const clase = await Clase.findById(claseId);
     if (!clase) {
-      console.log('Clase no encontrada:', claseId);
       return res.status(404).json({
         message: 'Clase no encontrada'
       });
@@ -137,28 +128,19 @@ export const crearOActualizarResumen = async (req, res) => {
     const obrasConPartitura = obrasEstudiadas.filter(obra => obra.partitura && obra.partitura !== null && obra.partitura !== '');
     const obrasManuales = obrasEstudiadas.filter(obra => !obra.partitura || obra.partitura === null || obra.partitura === '' || obra.esManual);
 
-    console.log('Obras con partitura (biblioteca):', obrasConPartitura.length);
-    console.log('Obras manuales:', obrasManuales.length);
-    console.log('Total obras:', obrasEstudiadas.length);
-
     // Verificar que las partituras de la biblioteca existen
     if (obrasConPartitura.length > 0) {
       const partituraIds = obrasConPartitura.map(obra => obra.partitura).filter(id => id); // Filtrar IDs válidos
       const partituraIdsUnicos = [...new Set(partituraIds)]; // Remover duplicados
-      console.log('IDs de partituras a verificar (únicos):', partituraIdsUnicos);
       
       const partidasExistentes = await Partitura.find({ 
         _id: { $in: partituraIdsUnicos }
       });
 
-      console.log('Partituras encontradas:', partidasExistentes.length, 'de', partituraIdsUnicos.length);
-
       if (partidasExistentes.length !== partituraIdsUnicos.length) {
-        console.log('Error: no se encontraron todas las partituras');
         const partiturasNoEncontradas = partituraIdsUnicos.filter(id => 
           id && !partidasExistentes.some(p => p._id.toString() === id.toString())
         );
-        console.log('Partituras no encontradas:', partiturasNoEncontradas);
         return res.status(400).json({
           message: 'Una o más partituras seleccionadas no existen',
           partiturasNoEncontradas
