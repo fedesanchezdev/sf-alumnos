@@ -8,6 +8,7 @@ import pagoRoutes from './routes/pagoRoutes.js';
 import claseRoutes from './routes/claseRoutes.js';
 import partituraRoutes from './routes/partituraRoutes.js';
 import resumenClaseRoutes from './routes/resumenClaseRoutes.js';
+import estudioRoutes from './routes/estudioRoutes.js';
 
 // Version: 2.3 - FINAL DEPLOY with complete Partitura model and all routes
 
@@ -73,6 +74,7 @@ app.use('/api/pagos', pagoRoutes);
 app.use('/api/clases', claseRoutes);
 app.use('/api/partituras', partituraRoutes);
 app.use('/api/resumenes-clase', resumenClaseRoutes);
+app.use('/api/estudios', estudioRoutes);
 
 // Ruta de prueba
 app.get('/api/test', (req, res) => {

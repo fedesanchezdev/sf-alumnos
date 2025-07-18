@@ -61,8 +61,6 @@ export const obtenerResumenesPorUsuario = async (req, res) => {
       .limit(parseInt(limite))
       .lean();
 
-    console.log(`Encontrados ${resumenes.length} resúmenes para usuario ${usuarioId}`);
-    
     // Filtrar resúmenes que tienen clase null y loggear los problemáticos
     const resumenesValidos = resumenes.filter(resumen => {
       if (!resumen.clase) {
@@ -108,16 +106,9 @@ export const crearOActualizarResumen = async (req, res) => {
       objetivosProximaClase 
     } = req.body;
 
-    console.log('Datos recibidos en backend:', {
-      claseId,
-      obrasEstudiadas,
-      objetivosProximaClase
-    });
-
     // Verificar que la clase existe
     const clase = await Clase.findById(claseId);
     if (!clase) {
-      console.log('Clase no encontrada:', claseId);
       return res.status(404).json({
         message: 'Clase no encontrada'
       });
@@ -125,21 +116,14 @@ export const crearOActualizarResumen = async (req, res) => {
 
     // Verificar que las partituras existen
     const partituraIds = obrasEstudiadas.map(obra => obra.partitura);
-    console.log('IDs de partituras a verificar:', partituraIds);
-    
     const partidasExistentes = await Partitura.find({ 
       _id: { $in: partituraIds }
     });
 
-    console.log('Partituras encontradas:', partidasExistentes.length, 'de', partituraIds.length);
-    console.log('Partituras encontradas:', partidasExistentes.map(p => ({ id: p._id, compositor: p.compositor, obra: p.obra })));
-
     if (partidasExistentes.length !== partituraIds.length) {
-      console.log('Error: no se encontraron todas las partituras');
       const partiturasNoEncontradas = partituraIds.filter(id => 
         !partidasExistentes.some(p => p._id.toString() === id.toString())
       );
-      console.log('Partituras no encontradas:', partiturasNoEncontradas);
       return res.status(400).json({
         message: 'Una o más partituras seleccionadas no existen',
         partiturasNoEncontradas
