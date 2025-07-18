@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import ResumenClase from './ResumenClase';
 import ResumenClaseCard from './ResumenClaseCard';
 import LoadingSpinner from './LoadingSpinner';
+import ModalEstudio from './ModalEstudio';
+import EstudiosUsuario from './EstudiosUsuario';
 import { logger } from '../utils/logger';
 
 const ESTADOS_CLASES = {
@@ -442,6 +444,10 @@ const GestionClases = ({ usuarioSeleccionado }) => {
   const [resumenes, setResumenes] = useState([]); // Resúmenes de clase del usuario
   const [loadingResumenes, setLoadingResumenes] = useState(false);
   const [resumenEditando, setResumenEditando] = useState(null); // Para editar resumen existente
+  const [calendarioAbierto, setCalendarioAbierto] = useState(true); // Estado para controlar el details
+  
+  // Estados para el modal de estudio
+  const [mostrarModalEstudio, setMostrarModalEstudio] = useState(false);
 
   const esAdmin = currentUser?.rol === 'administrador';
 
@@ -724,6 +730,19 @@ const GestionClases = ({ usuarioSeleccionado }) => {
     }
   };
 
+  // Funciones para el modal de estudio
+  const abrirModalEstudio = () => {
+    setMostrarModalEstudio(true);
+  };
+
+  const cerrarModalEstudio = () => {
+    setMostrarModalEstudio(false);
+  };
+
+  const manejarEstudioGuardado = () => {
+    // Aquí podrías agregar lógica adicional si necesitas hacer algo después de guardar un estudio
+  };
+
   const handleEstadoChange = (claseId) => {
     // Primero recargar los datos del servidor
     cargarClases().then(() => {
@@ -799,6 +818,12 @@ const GestionClases = ({ usuarioSeleccionado }) => {
 
   const usuarioSeleccionadoData = usuarios.find(u => u._id === usuarioActual);
 
+  // Función para manejar la selección de usuario y cerrar el calendario
+  const seleccionarUsuario = (usuarioId) => {
+    setUsuarioActual(usuarioId);
+    setCalendarioAbierto(false); // Cerrar el calendario cuando se selecciona un usuario
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">
@@ -808,38 +833,60 @@ const GestionClases = ({ usuarioSeleccionado }) => {
       {/* Estudiantes por día (solo admin) - Vista principal */}
       {esAdmin && (
         <div className="mb-8">
-          <div className="bg-gray-50 rounded-lg p-4">
-            {loadingEstudiantes ? (
-              <LoadingSpinner 
-                title="Cargando estudiantes..."
-                subtitle="Agrupando por días de la semana"
-                size="small"
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-                {estudiantesPorDia
-                  .filter(diaData => diaData.dia !== '1') // Excluir domingo (1)
-                  .map((diaData) => (
-                  <div key={diaData.dia} className="bg-white rounded-lg p-3 shadow-sm">
-                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">
-                      {diaData.nombreDia}
-                    </h4>
-                    <div className="text-xs text-gray-600 mb-2">
-                      {diaData.estudiantes.length} estudiante{diaData.estudiantes.length !== 1 ? 's' : ''}
-                    </div>
-                    {diaData.estudiantes.length > 0 ? (
-                      <div className="space-y-2">
-                        {diaData.estudiantes.map((estudiante) => (
-                          <div 
-                            key={estudiante._id} 
-                            className="p-2 bg-blue-50 rounded text-xs cursor-pointer hover:bg-blue-100 transition-colors"
-                            onClick={() => setUsuarioActual(estudiante._id)}
-                          >
-                            <div className="font-medium text-blue-900">
-                              {estudiante.nombre}
+          <details open={calendarioAbierto} className="bg-gray-50 rounded-lg overflow-hidden">
+            <summary 
+              className="cursor-pointer p-4 font-semibold text-lg text-gray-900 hover:bg-gray-100 transition-colors flex items-center justify-between"
+              onClick={(e) => {
+                e.preventDefault();
+                setCalendarioAbierto(!calendarioAbierto);
+              }}
+            >
+              <span className="flex items-center">
+                <span className={`transform transition-transform mr-2 ${calendarioAbierto ? 'rotate-90' : ''}`}>
+                  ▶
+                </span>
+                📅 Estudiantes por Día de la Semana
+                {usuarioActual && (
+                  <span className="ml-2 text-sm text-gray-600 font-normal">
+                    (Usuario seleccionado: {usuarioSeleccionadoData?.nombre})
+                  </span>
+                )}
+              </span>
+            </summary>
+            
+            <div className="p-4 pt-0">
+              {loadingEstudiantes ? (
+                <LoadingSpinner 
+                  title="Cargando estudiantes..."
+                  subtitle="Agrupando por días de la semana"
+                  size="small"
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                  {estudiantesPorDia
+                    .filter(diaData => diaData.dia !== '1') // Excluir domingo (1)
+                    .map((diaData) => (
+                    <div key={diaData.dia} className="bg-white rounded-lg p-3 shadow-sm">
+                      <h4 className="font-semibold text-gray-900 mb-2 text-sm">
+                        {diaData.nombreDia}
+                      </h4>
+                      <div className="text-xs text-gray-600 mb-2">
+                        {diaData.estudiantes.length} estudiante{diaData.estudiantes.length !== 1 ? 's' : ''}
+                      </div>
+                      {diaData.estudiantes.length > 0 ? (
+                        <div className="space-y-2">
+                          {diaData.estudiantes.map((estudiante) => (
+                            <div 
+                              key={estudiante._id} 
+                              className="p-2 bg-blue-50 rounded text-xs cursor-pointer hover:bg-blue-100 transition-colors"
+                              onClick={() => seleccionarUsuario(estudiante._id)}
+                            >
+                              <div className="font-medium text-blue-900">
+                                {estudiante.nombre}
+                              </div>
                             </div>
-                          </div>
-                        ))}                        </div>
+                          ))}
+                        </div>
                       ) : (
                         <div className="text-xs text-gray-400 italic">
                           Sin estudiantes
@@ -850,6 +897,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
                 </div>
               )}
             </div>
+          </details>
         </div>
       )}
 
@@ -866,7 +914,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
               </label>
               <select
                 value={usuarioActual}
-                onChange={(e) => setUsuarioActual(e.target.value)}
+                onChange={(e) => seleccionarUsuario(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md"
               >
                 <option value="">Seleccionar usuario...</option>
@@ -890,9 +938,20 @@ const GestionClases = ({ usuarioSeleccionado }) => {
               <div className="hidden md:grid md:grid-cols-12 md:gap-6 md:items-center">
                 {/* Izquierda: Nombre (4 columnas) */}
                 <div className="col-span-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    👤 {usuarioSeleccionadoData.nombre} {usuarioSeleccionadoData.apellido}
-                  </h2>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                      👤 {usuarioSeleccionadoData.nombre} {usuarioSeleccionadoData.apellido}
+                    </h2>
+                    {esAdmin && (
+                      <button
+                        onClick={() => setCalendarioAbierto(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        title="Cambiar usuario"
+                      >
+                        👤➡️👤 Cambiar usuario
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 {/* Medio: Último pago (4 columnas) */}
@@ -930,32 +989,26 @@ const GestionClases = ({ usuarioSeleccionado }) => {
                       <div className="grid grid-cols-5 gap-1">
                         {Object.entries(ESTADOS_CLASES).map(([key, estado]) => {
                           const estaFiltrado = filtroEstado === key;
-                          const tieneClases = (resumen[key] || 0) > 0;
+                          const clasesFiltradas = filtrarClases(clasesOrdenadas);
+                          const conteoActual = clasesFiltradas.filter(clase => clase.estado === key).length;
+                          const conteoTotal = resumen[key] || 0;
                           
                           return (
                             <div 
-                              key={key} 
-                              className={`
-                                p-1 rounded text-center border transition-all duration-200 cursor-pointer
-                                ${estaFiltrado 
-                                  ? `${estado.color} ${estado.textColor} ring-2 ring-offset-1 ring-blue-500 shadow-md` 
-                                  : tieneClases 
-                                    ? 'bg-gray-50 hover:bg-gray-100 hover:shadow-md transform hover:scale-105' 
-                                    : 'bg-gray-50 opacity-60'
-                                }
-                                ${!tieneClases ? 'cursor-not-allowed' : ''}
-                              `}
-                              title={`${estado.label}: ${resumen[key] || 0} clase${(resumen[key] || 0) !== 1 ? 's' : ''}${tieneClases ? ' - Click para filtrar' : ''}`}
-                              onClick={() => tieneClases && handleFiltroEstado(key)}
+                              key={key}
+                              className={`p-1 rounded text-center cursor-pointer transition-all duration-200 ${
+                                estaFiltrado
+                                  ? `${estado.color} ${estado.textColor} ring-2 ring-offset-1 ring-blue-500`
+                                  : `${estado.color} ${estado.textColor} hover:scale-105`
+                              }`}
+                              onClick={() => handleFiltroEstado(key)}
+                              title={`${estado.label}: ${conteoTotal} total${filtroEstado ? `, ${conteoActual} visibles` : ''}`}
                             >
-                              <div className="flex flex-col items-center">
-                                <span className="text-xs mb-0.5">{estado.icon}</span>
-                                <span className={`text-xs font-medium mb-0.5 leading-tight ${estaFiltrado ? 'text-white' : 'text-gray-600'}`}>
-                                  {estado.label}
-                                </span>
-                                <p className={`text-sm font-bold ${estaFiltrado ? 'text-white' : 'text-gray-800'}`}>
-                                  {resumen[key] || 0}
-                                </p>
+                              <div className="text-xs font-bold">
+                                {conteoTotal}
+                              </div>
+                              <div className="text-xs">
+                                {estado.label}
                               </div>
                             </div>
                           );
@@ -970,11 +1023,22 @@ const GestionClases = ({ usuarioSeleccionado }) => {
               <div className="md:hidden">
                 {/* Arriba: Nombre y último pago */}
                 <div className="mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-3">
-                    👤 {usuarioSeleccionadoData.nombre} {usuarioSeleccionadoData.apellido}
-                  </h2>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      👤 {usuarioSeleccionadoData.nombre} {usuarioSeleccionadoData.apellido}
+                    </h2>
+                    {esAdmin && (
+                      <button
+                        onClick={() => setCalendarioAbierto(true)}
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        title="Cambiar usuario"
+                      >
+                        👤➡️👤 Cambiar
+                      </button>
+                    )}
+                  </div>
                   {ultimoPago && (
-                    <div>
+                    <div className="mb-4">
                       <h3 className="text-base font-semibold text-green-700">
                         Último Pago - ${ultimoPago.monto?.toLocaleString()}
                       </h3>
@@ -1013,26 +1077,26 @@ const GestionClases = ({ usuarioSeleccionado }) => {
                             className={`
                               p-2 rounded text-center border transition-all duration-200 cursor-pointer
                               ${estaFiltrado 
-                                ? `${estado.color} ${estado.textColor} ring-2 ring-offset-1 ring-blue-500 shadow-md` 
+                                ? `${estado.color} ${estado.textColor} ring-2 ring-offset-1 ring-blue-500` 
                                 : tieneClases 
                                   ? 'bg-gray-50 hover:bg-gray-100 hover:shadow-md transform hover:scale-105' 
                                   : 'bg-gray-50 opacity-60'
-                              }
-                              ${!tieneClases ? 'cursor-not-allowed' : ''}
-                            `}
-                            title={`${estado.label}: ${resumen[key] || 0} clase${(resumen[key] || 0) !== 1 ? 's' : ''}${tieneClases ? ' - Click para filtrar' : ''}`}
-                            onClick={() => tieneClases && handleFiltroEstado(key)}
-                          >
-                            <div className="flex flex-col items-center">
-                              <span className="text-sm mb-1">{estado.icon}</span>
-                              <span className={`text-xs font-medium mb-1 leading-tight ${estaFiltrado ? 'text-white' : 'text-gray-600'}`}>
-                                {estado.label}
-                              </span>
-                              <p className={`text-base font-bold ${estaFiltrado ? 'text-white' : 'text-gray-800'}`}>
-                                {resumen[key] || 0}
-                              </p>
-                            </div>
+                            }
+                            ${!tieneClases ? 'cursor-not-allowed' : ''}
+                          `}
+                          title={`${estado.label}: ${resumen[key] || 0} clase${(resumen[key] || 0) !== 1 ? 's' : ''}${tieneClases ? ' - Click para filtrar' : ''}`}
+                          onClick={() => tieneClases && handleFiltroEstado(key)}
+                        >
+                          <div className="flex flex-col items-center">
+                            <span className="text-sm mb-1">{estado.icon}</span>
+                            <span className={`text-xs font-medium mb-1 leading-tight ${estaFiltrado ? 'text-white' : 'text-gray-600'}`}>
+                              {estado.label}
+                            </span>
+                            <p className={`text-base font-bold ${estaFiltrado ? 'text-white' : 'text-gray-800'}`}>
+                              {resumen[key] || 0}
+                            </p>
                           </div>
+                        </div>
                         );
                       })}
                     </div>
@@ -1060,6 +1124,27 @@ const GestionClases = ({ usuarioSeleccionado }) => {
               </div>
             </div>
           )}
+
+          {/* Estudios del usuario */}
+          <div className="mb-6">
+            {esAdmin && (
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-gray-700">📚 Estudios Activos</h3>
+                <button
+                  onClick={abrirModalEstudio}
+                  className="inline-flex items-center px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  📚 Agregar Estudio
+                </button>
+              </div>
+            )}
+            <EstudiosUsuario 
+              usuarioId={usuarioActual} 
+              modoVisualizacion="cards"
+              filtrarEstados={['en_progreso', 'pausado']}
+              mostrarTitulo={!esAdmin}
+            />
+          </div>
 
           {/* Clases del último pago */}
           {loading ? (
@@ -1231,6 +1316,14 @@ const GestionClases = ({ usuarioSeleccionado }) => {
           onSave={handleResumenGuardado}
         />
       )}
+
+      {/* Modal para crear/editar estudios */}
+      <ModalEstudio 
+        mostrar={mostrarModalEstudio}
+        onCerrar={cerrarModalEstudio}
+        onGuardado={manejarEstudioGuardado}
+        usuarioPreseleccionado={usuarioActual}
+      />
     </div>
   );
 };

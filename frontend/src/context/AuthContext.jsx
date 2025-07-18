@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/api';
+import authService from '../services/authService';
 import { logger } from '../utils/logger';
 
 const AuthContext = createContext();
@@ -33,10 +33,10 @@ export const AuthProvider = ({ children }) => {
       logger.sensitive('Intentando login con:', { email, password: '***' });
       logger.debug('API URL:', import.meta.env.VITE_API_URL);
       
-      const response = await usuariosService.login({ email, password });
+      const response = await authService.login({ email, password });
       logger.sensitive('Respuesta del servidor:', response);
       
-      const { token, usuario: userData } = response.data;
+      const { token, usuario: userData } = response;
       
       localStorage.setItem('token', token);
       localStorage.setItem('usuario', JSON.stringify(userData));

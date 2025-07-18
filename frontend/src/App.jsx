@@ -12,6 +12,8 @@ import AdminPartituras from './components/AdminPartituras';
 import ResumenClasePage from './components/ResumenClasePage';
 import MisClases from './components/MisClases';
 import MisPagos from './components/MisPagos';
+import MisEstudios from './components/MisEstudios';
+import GestionEstudios from './components/GestionEstudios';
 import LoggingTest from './components/LoggingTest';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -133,6 +135,24 @@ function AppContent() {
           element={
             <ProtectedRoute adminOnly={true}>
               <AdminPartituras />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/estudios" 
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <GestionEstudios />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/mis-estudios" 
+          element={
+            <ProtectedRoute>
+              <MisEstudios />
             </ProtectedRoute>
           } 
         />
