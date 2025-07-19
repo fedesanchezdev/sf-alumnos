@@ -448,6 +448,7 @@ const GestionClases = ({ usuarioSeleccionado }) => {
   
   // Estados para el modal de estudio
   const [mostrarModalEstudio, setMostrarModalEstudio] = useState(false);
+  const [recargarEstudios, setRecargarEstudios] = useState(0); // Contador para forzar recarga
 
   const esAdmin = currentUser?.rol === 'administrador';
 
@@ -740,7 +741,8 @@ const GestionClases = ({ usuarioSeleccionado }) => {
   };
 
   const manejarEstudioGuardado = () => {
-    // Aquí podrías agregar lógica adicional si necesitas hacer algo después de guardar un estudio
+    // Incrementar el contador para forzar recarga de estudios
+    setRecargarEstudios(prev => prev + 1);
   };
 
   const handleEstadoChange = (claseId) => {
@@ -1139,10 +1141,12 @@ const GestionClases = ({ usuarioSeleccionado }) => {
               </div>
             )}
             <EstudiosUsuario 
+              key={`estudios-${usuarioActual}-${recargarEstudios}`}
               usuarioId={usuarioActual} 
               modoVisualizacion="cards"
               filtrarEstados={['en_progreso', 'pausado']}
               mostrarTitulo={!esAdmin}
+              esAdmin={esAdmin}
             />
           </div>
 

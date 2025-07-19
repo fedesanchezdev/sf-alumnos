@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, Book, Calendar, TrendingUp, CheckCircle2, Settings } from 'lucide-react';
+import { ChevronDown, ChevronRight, Book, Calendar, TrendingUp, CheckCircle2, Settings, Play, CheckCircle, Pause, Clock } from 'lucide-react';
 import estudioService from '../services/estudioService';
 
 // Estilos CSS en línea para el slider personalizado
@@ -38,7 +38,8 @@ const EstudiosUsuario = ({
   usuarioId, 
   mostrarTitulo = true, 
   modoVisualizacion = 'details', // 'details' o 'cards'
-  filtrarEstados = null // array de estados a mostrar, null = todos
+  filtrarEstados = null, // array de estados a mostrar, null = todos
+  esAdmin = false // indica si el usuario es administrador
 }) => {
   const [estudios, setEstudios] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,12 +48,15 @@ const EstudiosUsuario = ({
   const [mesesExpandidos, setMesesExpandidos] = useState({});
   const [estudiosFinalizando, setEstudiosFinalizando] = useState(new Set());
   const [progresosTemporales, setProgresosTemporales] = useState({});
+  const [mostrarModalFinalizar, setMostrarModalFinalizar] = useState(false);
+  const [estudioAFinalizar, setEstudioAFinalizar] = useState(null);
+  const [fechaFinalizacion, setFechaFinalizacion] = useState('');
 
   useEffect(() => {
     if (usuarioId) {
       cargarEstudios();
     }
-  }, [usuarioId]);
+  }, [usuarioId, filtrarEstados]);
 
   const cargarEstudios = async () => {
     try {
@@ -89,26 +93,26 @@ const EstudiosUsuario = ({
   const getEstadoColor = (estado) => {
     switch (estado) {
       case 'en_progreso':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-blue-600';
       case 'finalizado':
-        return 'text-green-600 bg-green-100';
+        return 'text-green-600';
       case 'pausado':
-        return 'text-yellow-600 bg-yellow-100';
+        return 'text-yellow-600';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'text-gray-600';
     }
   };
 
-  const getEstadoTexto = (estado) => {
+  const getEstadoIcono = (estado) => {
     switch (estado) {
       case 'en_progreso':
-        return 'En progreso';
+        return <Play className="w-3 h-3" />;
       case 'finalizado':
-        return 'Finalizado';
+        return <CheckCircle className="w-3 h-3" />;
       case 'pausado':
-        return 'Pausado';
+        return <Pause className="w-3 h-3" />;
       default:
-        return estado;
+        return <Clock className="w-3 h-3" />;
     }
   };
 
@@ -153,28 +157,48 @@ const EstudiosUsuario = ({
     }));
   };
 
-  const finalizarEstudio = async (estudio) => {
+  const abrirModalFinalizar = (estudio) => {
+    setEstudioAFinalizar(estudio);
+    // Establecer fecha de hoy como predeterminada
+    const hoy = new Date().toISOString().split('T')[0];
+    setFechaFinalizacion(hoy);
+    setMostrarModalFinalizar(true);
+  };
+
+  const cerrarModalFinalizar = () => {
+    setMostrarModalFinalizar(false);
+    setEstudioAFinalizar(null);
+    setFechaFinalizacion('');
+  };
+
+  const finalizarEstudio = async () => {
+    if (!estudioAFinalizar || !fechaFinalizacion) return;
+    
     try {
-      setEstudiosFinalizando(prev => new Set([...prev, estudio._id]));
+      setEstudiosFinalizando(prev => new Set([...prev, estudioAFinalizar._id]));
       
-      const progreso = progresosTemporales[estudio._id] || estudio.porcentajeProgreso;
+      const progreso = progresosTemporales[estudioAFinalizar._id] || estudioAFinalizar.porcentajeProgreso;
       
-      await estudioService.actualizarEstudio(estudio._id, {
+      await estudioService.actualizarEstudio(estudioAFinalizar._id, {
         estado: 'finalizado',
-        porcentajeProgreso: progreso
+        porcentajeProgreso: progreso,
+        fechaFinalizada: fechaFinalizacion
       });
+      
+      // Cerrar modal
+      cerrarModalFinalizar();
       
       // Esperar 2 segundos antes de filtrar
       setTimeout(() => {
-        setEstudios(prev => prev.filter(e => e._id !== estudio._id));
+        setEstudios(prev => prev.filter(e => e._id !== estudioAFinalizar._id));
         setEstudiosFinalizando(prev => {
           const newSet = new Set(prev);
-          newSet.delete(estudio._id);
+          newSet.delete(estudioAFinalizar._id);
           return newSet;
         });
         setProgresosTemporales(prev => {
           const newProgresos = { ...prev };
-          delete newProgresos[estudio._id];
+          delete newProgresos[estudioAFinalizar._id];
           return newProgresos;
         });
       }, 2000);
@@ -183,9 +207,10 @@ const EstudiosUsuario = ({
       console.error('Error al finalizar estudio:', error);
       setEstudiosFinalizando(prev => {
         const newSet = new Set(prev);
-        newSet.delete(estudio._id);
+        newSet.delete(estudioAFinalizar._id);
         return newSet;
       });
+      alert('Error al finalizar el estudio: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -249,112 +274,189 @@ const EstudiosUsuario = ({
   // Vista en cards (para GestionClases)
   if (modoVisualizacion === 'cards') {
     return (
-      <div className="space-y-3">
-        {mostrarTitulo && (
-          <h3 className="text-sm font-medium text-gray-700 mb-3">
-            📚 Estudios Activos ({estudios.length})
-          </h3>
-        )}
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {estudios.map(estudio => {
-            const estaFinalizando = estudiosFinalizando.has(estudio._id);
-            const progresoActual = progresosTemporales[estudio._id] !== undefined 
-              ? progresosTemporales[estudio._id] 
-              : estudio.porcentajeProgreso;
-            
-            return (
-              <div 
-                key={estudio._id} 
-                className={`bg-gradient-to-br from-white to-gray-50 border-2 border-gray-300 rounded-lg p-4 shadow-sm transition-all duration-300 ${
-                  estaFinalizando ? 'bg-green-50 border-green-300 scale-95 opacity-70' : 'hover:shadow-md hover:border-gray-400'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-gray-900 truncate">
-                      {estudio.compositor}
-                    </h4>
-                    <p className="text-xs text-gray-600 truncate">
-                      {estudio.obra}
-                    </p>
-                  </div>
-                  <span className={`ml-2 px-2 py-1 text-xs font-medium rounded-full ${getEstadoColor(estudio.estado)}`}>
-                    {getEstadoTexto(estudio.estado)}
-                  </span>
-                </div>
-                
-                {/* Slider de progreso */}
-                <div className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs text-gray-600 flex items-center">
-                      <Settings className="w-3 h-3 mr-1" />
-                      Logro
-                    </label>
-                    <span className="text-xs font-semibold text-blue-600">
-                      {progresoActual}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={progresoActual}
-                    onChange={(e) => actualizarProgreso(estudio._id, parseInt(e.target.value))}
-                    disabled={estaFinalizando}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    style={{
-                      background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${progresoActual}%, #e5e7eb ${progresoActual}%, #e5e7eb 100%)`
-                    }}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                  <div className="flex items-center">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    <span>{formatearFecha(estudio.fechaInicio)}</span>
-                  </div>
-                </div>
-                
-                {estudio.notas && (
-                  <div className="mb-3 text-xs text-gray-500 bg-gray-100 rounded p-2">
-                    {estudio.notas.length > 50 ? `${estudio.notas.substring(0, 50)}...` : estudio.notas}
-                  </div>
-                )}
-                
-                {/* Botón de finalizar */}
-                <button
-                  onClick={() => finalizarEstudio(estudio)}
-                  disabled={estaFinalizando}
-                  className={`w-full py-2 px-3 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center ${
-                    estaFinalizando
-                      ? 'bg-green-500 text-white cursor-not-allowed'
-                      : 'bg-blue-500 hover:bg-blue-600 text-white hover:shadow-md active:scale-95'
+      <>
+        <div className="space-y-3">
+          {mostrarTitulo && (
+            <h3 className="text-sm font-medium text-gray-700 mb-3">
+              📚 Estudios Activos ({estudios.length})
+            </h3>
+          )}
+          
+          <div className="space-y-2">
+            {estudios.map(estudio => {
+              const estaFinalizando = estudiosFinalizando.has(estudio._id);
+              const progresoActual = progresosTemporales[estudio._id] !== undefined 
+                ? progresosTemporales[estudio._id] 
+                : estudio.porcentajeProgreso;
+              
+              // Formatear fecha de inicio como "15JUL"
+              const formatearFechaCorta = (fecha) => {
+                if (!fecha) return '';
+                const date = new Date(fecha);
+                const dia = date.getDate().toString().padStart(2, '0');
+                const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+                const mes = meses[date.getMonth()];
+                return `${dia}${mes}`;
+              };
+              
+              return (
+                <div 
+                  key={estudio._id} 
+                  className={`bg-white border border-gray-200 rounded-lg shadow-sm transition-all duration-200 overflow-hidden ${
+                    estaFinalizando ? 'bg-green-50 border-green-300 opacity-70' : 'hover:shadow-md hover:border-gray-300'
                   }`}
                 >
-                  {estaFinalizando ? (
-                    <>
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Finalizando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Finalizar Estudio
-                    </>
-                  )}
-                </button>
+                  <div className="grid grid-cols-[auto_1fr_auto] text-sm">
+                    {/* Columna izquierda: Fecha de inicio */}
+                    <div className="flex flex-col justify-center items-center min-w-[60px] bg-gray-700 text-white py-1">
+                      <span className="font-bold text-sm">
+                        {formatearFechaCorta(estudio.fechaInicio)}
+                      </span>
+                    </div>
+                    
+                    {/* Columna central: Contenido principal */}
+                    <div className="flex flex-col gap-1 px-3 py-1">
+                      {/* Primera línea: Compositor y obra */}
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 truncate">
+                          {estudio.compositor}
+                        </span>
+                        <span className="text-gray-600 truncate flex-1">
+                          {estudio.obra}
+                        </span>
+                      </div>
+                      
+                      {/* Segunda línea: Progreso y estado */}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 transition-all duration-300"
+                              style={{ width: `${progresoActual}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-blue-600">
+                            {progresoActual}%
+                          </span>
+                        </div>
+                        
+                        <span className={`flex items-center justify-center min-w-[30px] ${getEstadoColor(estudio.estado)}`}>
+                          {getEstadoIcono(estudio.estado)}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Columna derecha: Fecha de finalización o botones */}
+                    <div className={`flex flex-col justify-center items-center min-w-[60px] py-1 ${
+                      estudio.fechaFinalizada ? 'bg-gray-700 text-white' : 'bg-gray-700 text-white'
+                    }`}>
+                      {estudio.fechaFinalizada ? (
+                        <span className="font-bold text-sm">
+                          {formatearFechaCorta(estudio.fechaFinalizada)}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="font-bold text-sm text-white">-:-</span>
+                          {/* Solo mostrar botón de finalizar si es admin */}
+                          {esAdmin && estudio.estado !== 'finalizado' && (
+                            <button
+                              onClick={() => abrirModalFinalizar(estudio)}
+                              disabled={estaFinalizando}
+                              className={`mt-1 p-1 rounded text-xs transition-all duration-200 ${
+                                estaFinalizando
+                                  ? 'bg-green-500 text-white cursor-not-allowed'
+                                  : 'bg-blue-500 hover:bg-blue-600 text-white hover:shadow-md'
+                              }`}
+                              title="Finalizar estudio"
+                            >
+                              {estaFinalizando ? '⏳' : '✓'}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Modal de finalización */}
+          {mostrarModalFinalizar && estudioAFinalizar && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                <h3 className="text-lg font-bold mb-4 text-gray-900">
+                  🎯 Finalizar Estudio
+                </h3>
+                
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-1">
+                    {estudioAFinalizar.compositor}
+                  </h4>
+                  <p className="text-blue-700 text-sm">
+                    {estudioAFinalizar.obra}
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📅 Fecha de finalización
+                  </label>
+                  <input
+                    type="date"
+                    value={fechaFinalizacion}
+                    onChange={(e) => setFechaFinalizacion(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Por defecto se usa la fecha de hoy. No se permiten fechas futuras.
+                  </p>
+                </div>
+
+                <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    ⚠️ <strong>Atención:</strong> Una vez finalizado, el estudio se ocultará de la vista de estudios activos y se marcará como completado.
+                  </p>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={cerrarModalFinalizar}
+                    disabled={estudioAFinalizar && estudiosFinalizando.has(estudioAFinalizar._id)}
+                    className="flex-1 px-4 py-2 text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={finalizarEstudio}
+                    disabled={(estudioAFinalizar && estudiosFinalizando.has(estudioAFinalizar._id)) || !fechaFinalizacion}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+                  >
+                    {(estudioAFinalizar && estudiosFinalizando.has(estudioAFinalizar._id)) ? 'Finalizando...' : 'Finalizar Estudio'}
+                  </button>
+                </div>
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
-      </div>
+      </>
     );
   }
 
   // Vista en details (para GestionEstudios)
   const estudiosAgrupados = agruparEstudiosPorFecha(estudios);
   const años = Object.keys(estudiosAgrupados).sort((a, b) => b - a);
+
+  // Formatear fecha de inicio como "15JUL"
+  const formatearFechaCorta = (fecha) => {
+    if (!fecha) return '';
+    const date = new Date(fecha);
+    const dia = date.getDate().toString().padStart(2, '0');
+    const meses = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+    const mes = meses[date.getMonth()];
+    return `${dia}${mes}`;
+  };
 
   return (
     <div className="space-y-2">
@@ -405,38 +507,53 @@ const EstudiosUsuario = ({
                 
                 <div className="ml-4 mt-1 space-y-1">
                   {mesData.estudios.map(estudio => (
-                    <div key={estudio._id} className="text-xs bg-white border border-gray-200 rounded p-2 hover:bg-gray-50">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="font-medium text-gray-900">
-                          {estudio.compositor} - {estudio.obra}
-                        </div>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getEstadoColor(estudio.estado)}`}>
-                          {getEstadoTexto(estudio.estado)}
+                    <div key={estudio._id} className="bg-white border border-gray-200 rounded p-2 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-3 text-xs">
+                        {/* Fecha de inicio */}
+                        <span className="font-semibold text-gray-700 min-w-[45px]">
+                          {formatearFechaCorta(estudio.fechaInicio)}
                         </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-gray-600">
-                        <div className="flex items-center space-x-3">
-                          <span className="flex items-center">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {formatearFecha(estudio.fechaInicio)}
+                        
+                        {/* Compositor */}
+                        <span className="font-medium text-gray-900 min-w-[100px] truncate">
+                          {estudio.compositor}
+                        </span>
+                        
+                        {/* Obra */}
+                        <span className="text-gray-600 flex-1 truncate">
+                          {estudio.obra}
+                        </span>
+                        
+                        {/* Progreso con barra corta */}
+                        <div className="flex items-center gap-1 min-w-[60px]">
+                          <div className="w-8 h-1 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-blue-500 transition-all duration-300"
+                              style={{ width: `${estudio.porcentajeProgreso}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-blue-600 w-6">
+                            {estudio.porcentajeProgreso}%
                           </span>
-                          {estudio.fechaFinalizada && (
-                            <span className="flex items-center">
-                              → {formatearFecha(estudio.fechaFinalizada)}
-                            </span>
-                          )}
                         </div>
                         
-                        <div className="flex items-center">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          <span className="font-medium">{estudio.porcentajeProgreso}%</span>
-                        </div>
+                        {/* Estado */}
+                        <span className={`flex items-center justify-center min-w-[30px] ${getEstadoColor(estudio.estado)}`}>
+                          {getEstadoIcono(estudio.estado)}
+                        </span>
+                        
+                        {/* Fecha de finalización (si existe) */}
+                        {estudio.fechaFinalizada && (
+                          <span className="font-semibold text-green-700 min-w-[45px]">
+                            {formatearFechaCorta(estudio.fechaFinalizada)}
+                          </span>
+                        )}
                       </div>
                       
+                      {/* Notas (si existen) - en línea separada pero compacta */}
                       {estudio.notas && (
-                        <div className="mt-1 text-gray-500 text-xs">
-                          {estudio.notas}
+                        <div className="mt-1 ml-[45px] text-xs text-gray-500 italic">
+                          📝 {estudio.notas}
                         </div>
                       )}
                     </div>
