@@ -62,13 +62,29 @@ const Dashboard = () => {
 
             <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl shadow-sm border border-purple-200">
               <h3 className="text-lg font-semibold text-purple-900 mb-3 flex items-center">
+                <span className="mr-2">📊</span>
+                Sesiones Compartidas
+              </h3>
+              <p className="text-purple-700 mb-4">
+                Revisa las sesiones de estudio que los alumnos han compartido contigo
+              </p>
+              <Link
+                to="/sesiones-compartidas"
+                className="inline-block bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+              >
+                Ver Sesiones
+              </Link>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-sm border border-green-200">
+              <h3 className="text-lg font-semibold text-green-900 mb-3 flex items-center">
                 <span className="mr-2">⚙️</span>
                 Panel de Administración
               </h3>
-              <p className="text-purple-700 mb-4">
+              <p className="text-green-700 mb-4">
                 Acceso completo al sistema
               </p>
-              <span className="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg text-sm">
+              <span className="inline-block bg-green-600 text-white px-4 py-2 rounded-lg text-sm">
                 Administrador
               </span>
             </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
@@ -14,6 +15,10 @@ import MisClases from './components/MisClases';
 import MisPagos from './components/MisPagos';
 import MisEstudios from './components/MisEstudios';
 import GestionEstudios from './components/GestionEstudios';
+import SesionEstudio from './components/estudio/SesionEstudio';
+import HistorialSesiones from './components/estudio/HistorialSesiones';
+import SesionesCompartidas from './components/estudio/SesionesCompartidas';
+import MisComentariosProfesor from './components/estudio/MisComentariosProfesor';
 import LoggingTest from './components/LoggingTest';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -149,10 +154,46 @@ function AppContent() {
         />
 
         <Route 
+          path="/sesiones-compartidas" 
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <SesionesCompartidas />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
           path="/mis-estudios" 
           element={
             <ProtectedRoute>
               <MisEstudios />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/sesion-estudio" 
+          element={
+            <ProtectedRoute>
+              <SesionEstudio />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/historial-sesiones" 
+          element={
+            <ProtectedRoute>
+              <HistorialSesiones />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/mis-comentarios-profesor" 
+          element={
+            <ProtectedRoute>
+              <MisComentariosProfesor />
             </ProtectedRoute>
           } 
         />
@@ -215,6 +256,26 @@ function App() {
         }}
       >
         <AppContent />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              style: {
+                background: '#059669',
+              },
+            },
+            error: {
+              style: {
+                background: '#dc2626',
+              },
+            },
+          }}
+        />
       </Router>
     </AuthProvider>
   );

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Notificaciones from './notificaciones/Notificaciones';
 
 const Navbar = () => {
   const { usuario, logout } = useAuth();
@@ -25,6 +26,9 @@ const Navbar = () => {
 
           {/* Usuario y Cerrar Sesión */}
           <div className="flex items-center space-x-4">
+            {/* Notificaciones */}
+            <Notificaciones />
+            
             <div className="text-white text-sm">
               <span className="font-medium">{usuario?.nombre} {usuario?.apellido}</span>
               <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
