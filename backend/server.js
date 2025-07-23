@@ -9,8 +9,10 @@ import claseRoutes from './routes/claseRoutes.js';
 import partituraRoutes from './routes/partituraRoutes.js';
 import resumenClaseRoutes from './routes/resumenClaseRoutes.js';
 import estudioRoutes from './routes/estudioRoutes.js';
+import sesionEstudioRoutes from './routes/sesionEstudioRoutes.js';
+import notificacionRoutes from './routes/notificacionRoutes.js';
 
-// Version: 2.3 - FINAL DEPLOY with complete Partitura model and all routes
+// Version: 2.4 - Added SesionEstudio for practice tracking with timer and metronome
 
 // Configurar variables de entorno
 dotenv.config();
@@ -75,6 +77,10 @@ app.use('/api/clases', claseRoutes);
 app.use('/api/partituras', partituraRoutes);
 app.use('/api/resumenes-clase', resumenClaseRoutes);
 app.use('/api/estudios', estudioRoutes);
+app.use('/api/notificaciones', notificacionRoutes);
+console.log('🔧 Cargando rutas de sesiones de estudio...');
+app.use('/api/sesiones-estudio', sesionEstudioRoutes);
+console.log('✅ Rutas de sesiones de estudio cargadas');
 
 // Ruta de prueba
 app.get('/api/test', (req, res) => {
@@ -138,7 +144,17 @@ app.use('*', (req, res) => {
       'GET /api/partituras',
       'POST /api/partituras',
       'PUT /api/partituras/:id',
-      'DELETE /api/partituras/:id'
+      'DELETE /api/partituras/:id',
+      'POST /api/sesiones-estudio',
+      'GET /api/sesiones-estudio/activa',
+      'PUT /api/sesiones-estudio/:id',
+      'PUT /api/sesiones-estudio/:id/finalizar',
+      'GET /api/sesiones-estudio/historial',
+      'GET /api/sesiones-estudio/estadisticas',
+      'GET /api/sesiones-estudio/obras',
+      'GET /api/sesiones-estudio/:id',
+      'PUT /api/sesiones-estudio/:id/editar',
+      'DELETE /api/sesiones-estudio/:id'
     ]
   });
 });
@@ -188,6 +204,13 @@ app.listen(PORT, () => {
    • GET  /api/resumenes-clase/usuario/:usuarioId
    • POST /api/resumenes-clase
    • DELETE /api/resumenes-clase/:id
+   • GET  /api/sesiones-estudio/activa
+   • GET  /api/sesiones-estudio/historial  
+   • GET  /api/sesiones-estudio/estadisticas
+   • GET  /api/sesiones-estudio/obras
+   • POST /api/sesiones-estudio
+   • PUT  /api/sesiones-estudio/:id
+   • PUT  /api/sesiones-estudio/:id/finalizar
 `);
 
   if (process.env.MONGODB_URI) {
