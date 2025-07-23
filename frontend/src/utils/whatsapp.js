@@ -29,21 +29,21 @@ export const codificarParaWhatsApp = (texto) => {
  */
 export const enviarWhatsApp = (mensaje, telefono = null) => {
   const mensajeCodificado = codificarParaWhatsApp(mensaje);
-  
+
   let whatsappUrl;
   if (telefono && telefono.trim() !== '') {
     // Limpiar el número de teléfono solo de espacios, guiones, paréntesis
     // PERO mantener el número exactamente como está registrado (sin agregar código de país)
     let telefonoLimpio = telefono.replace(/[\s\-\(\)]/g, '');
-    
+
     // Remover el + si existe al inicio (WhatsApp API no lo necesita)
     telefonoLimpio = telefonoLimpio.replace(/^\+/, '');
-    
+
     whatsappUrl = `https://api.whatsapp.com/send?phone=${telefonoLimpio}&text=${mensajeCodificado}`;
   } else {
     whatsappUrl = `https://api.whatsapp.com/send?text=${mensajeCodificado}`;
   }
-  
+
   window.open(whatsappUrl, '_blank');
 };
 
@@ -56,15 +56,15 @@ export const enviarWhatsApp = (mensaje, telefono = null) => {
  * @returns {string} - Mensaje formateado
  */
 export const generarMensajeResumen = ({ fecha, obrasEstudiadas = [], objetivosProximaClase = '' }) => {
-  let mensaje = `🎼 *Resumen de Clase*\n`;
+  let mensaje = `*Resumen de Clase*\n`;
   mensaje += `📅 Fecha: ${fecha}\n\n`;
-  
+
   if (obrasEstudiadas.length > 0) {
     mensaje += `🎵 *Obras Estudiadas:*\n`;
     obrasEstudiadas.forEach((obra, index) => {
       mensaje += `${index + 1}. *${obra.compositor}* - ${obra.obra}\n`;
       if (obra.movimientosCompases) {
-        mensaje += `   📖 Movimientos/Compases: ${obra.movimientosCompases}\n`;
+        mensaje += `   📖 : ${obra.movimientosCompases}\n`;
       }
       if (obra.comentarios) {
         mensaje += `   💭 ${obra.comentarios}\n`;
@@ -72,10 +72,10 @@ export const generarMensajeResumen = ({ fecha, obrasEstudiadas = [], objetivosPr
       mensaje += `\n`;
     });
   }
-  
+
   if (objetivosProximaClase) {
     mensaje += `📋 *Próxima Clase:*\n${objetivosProximaClase}`;
   }
-  
+
   return mensaje;
 };
